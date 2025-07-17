@@ -107,7 +107,7 @@ export default function LoginScreen() {
             disabled={loading}
             style={styles.loginButton}
           />
-
+         
           <View style={styles.linkContainer}>
             <Text style={styles.registerText}>Si aún no tiene cuenta con nosotros, </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Registro")}>
