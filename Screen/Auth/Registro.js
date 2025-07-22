@@ -18,34 +18,38 @@ import MenuComponent from "../../Components/MenuComponent";
 import ChatButtonComponent from "../../Components/ChatButtonComponent";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { registroUser } from "../../Src/Services/AuthServeces"; // Importa la función de registro
 // import { Picker } from '@react-native-picker/picker'; // Eliminada la importación del Picker
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
-  const [nombres, setNombres] = useState("");
+  const [nombre, setNombres] = useState("");
   const [email, setEmail] = useState("");
   const [direccion, setDireccion] = useState("");
   const [telefono, setTelefono] = useState("");
-  // const [rol, setRol] = useState("cliente"); // Eliminado el estado 'rol'
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showMenu, setShowMenu] = useState(false); // Estado para controlar la visibilidad del menú
 
+
+  // Función para manejar el registro
   const handleRegister = async () => {
-    if (!nombres || !email || !direccion || !telefono || !password) {
-      Alert.alert("Campos Vacíos", "Por favor, completa todos los campos.");
-      return;
+    // Verifica que todos los campos estén llenos
+    if (!nombre || !email || !direccion || !telefono || !password) {
+      return Alert.alert("Campos Vacíos", "Por favor, completa todos los campos.");
     }
 
-    setLoading(true);
-    // Simulación de una llamada a API
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert("Éxito", "¡Registro exitoso! Simulación de creación de cuenta.");
-      // Aquí podrías simular la navegación de vuelta al login:
-      navigation.navigate("Login");
-    }, 2000); // Simula un retardo de 2 segundos
+    // Llama a la función de registro
+    const result = await registroUser(nombre, email, password, direccion, telefono);
+
+    // Manejo de la respuesta del registro
+    if (result.success) {
+      Alert.alert("Éxito", "Registro exitoso", [
+        { text: "OK", onPress: () => navigation.navigate("Login") }, // Navega a la pantalla de inicio de sesión
+      ]);
+    } else {
+      Alert.alert("Error", result.message || "No se pudo registrar"); // Muestra un mensaje de error
+    }
   };
 
   const toggleMenu = () => {
@@ -56,7 +60,9 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+
     >
+
       <HeaderComponent toggleMenu={toggleMenu} />
 
       <ScrollView contentContainerStyle={styles.scrollViewContent} style={styles.scrollView}>
@@ -70,9 +76,9 @@ export default function RegisterScreen() {
               <TextInput
                 placeholder="Ingrese sus nombres"
                 style={styles.input}
-                value={nombres}
+                value={nombre}
                 onChangeText={setNombres}
-                editable={!loading}
+                // editable={!loading}
                 placeholderTextColor="#888"
               />
             </View>
@@ -88,7 +94,7 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
-                editable={!loading}
+                // editable={!loading}
                 placeholderTextColor="#888"
               />
             </View>
@@ -102,7 +108,7 @@ export default function RegisterScreen() {
                 style={styles.input}
                 value={direccion}
                 onChangeText={setDireccion}
-                editable={!loading}
+                // editable={!loading}
                 placeholderTextColor="#888"
               />
             </View>
@@ -117,7 +123,7 @@ export default function RegisterScreen() {
                 keyboardType="phone-pad"
                 value={telefono}
                 onChangeText={setTelefono}
-                editable={!loading}
+                // editable={!loading}
                 placeholderTextColor="#888"
               />
             </View>
@@ -150,7 +156,7 @@ export default function RegisterScreen() {
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                editable={!loading}
+                // editable={!loading}
                 placeholderTextColor="#888"
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.passwordToggle}>
@@ -160,10 +166,11 @@ export default function RegisterScreen() {
           </View>
 
           <BotonComponent
-            title={loading ? <ActivityIndicator color="#fff" /> : "Guardar"}
+            title="Guardar"
+            // title={loading ? <ActivityIndicator color="#fff" /> : "Guardar"}
             onPress={handleRegister}
-            disabled={loading}
-            style={styles.registerButton}
+          // // disabled={loading}
+          // style={styles.registerButton}
           />
 
           {/* Enlace para volver al login, funcional */}
