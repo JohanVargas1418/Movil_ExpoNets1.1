@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Animated, // Asegúrate de importar Animated
 } from "react-native";
 import BotonComponent from "../../Components/BotonComponent";
 import HeaderComponent from "../../Components/HeaderComponent";
@@ -18,6 +19,7 @@ import MenuComponent from "../../Components/MenuComponent";
 import ChatButtonComponent from "../../Components/ChatButtonComponent"; // Importar ChatButtonComponent
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { loginUser } from "../../Src/Services/AuthServeces"; // Importa la función de registro
 
 
 export default function LoginScreen() {
@@ -27,25 +29,44 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showMenu, setShowMenu] = useState(false); // Estado para controlar la visibilidad del menú
+  const rippleScale = new Animated.Value(0); // Asegúrate de inicializar rippleScale
 
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Campos Vacíos", "Por favor, ingresa tu correo electrónico y contraseña.");
       return;
     }
+    setLoading(true); // Cambia el estado de carga a verdadero
+    // Inicia la animación de onda
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(rippleScale, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rippleScale, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
 
-    setLoading(true);
-    // Simulación de una llamada a API
-    setTimeout(() => {
-      setLoading(false);
-      if (email === "test@example.com" && password === "password123") {
-        Alert.alert("Éxito", "¡Bienvenido! Simulación de login exitoso.");
-        // Aquí podrías simular la navegación, por ejemplo:
-        // navigation.navigate("Home"); // Asumiendo que tienes una ruta "Home"
+    try {
+      // Llama a la función de inicio de sesión
+      const result = await loginUser (email, password);
+      if (result.success) {
+        Alert.alert("Éxito", "¡Bienvenido!"); // Muestra un mensaje de éxito
       } else {
-        Alert.alert("Error de login", "Credenciales incorrectas. Intenta con 'test@example.com' y 'password123'.");
+        Alert.alert("Error", result.message || "Error al iniciar sesión"); // Muestra un mensaje de error
       }
-    }, 2000); // Simula un retardo de 2 segundos
+    } catch (error) {
+      Alert.alert("Error", "Error inesperado"); // Manejo de errores
+    } finally {
+      rippleScale.setValue(0); // Resetea el efecto de onda
+      setLoading(false); // Cambia el estado de carga a falso
+    }
   };
 
   const toggleMenu = () => {
@@ -76,7 +97,6 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
-                editable={!loading}
                 placeholderTextColor="#888"
               />
             </View>
@@ -92,7 +112,6 @@ export default function LoginScreen() {
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                editable={!loading}
                 placeholderTextColor="#888"
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.passwordToggle}>
@@ -102,12 +121,18 @@ export default function LoginScreen() {
           </View>
 
           <BotonComponent
-            title={loading ? <ActivityIndicator color="#fff" /> : "Ingresar"}
+            title="Iniciar Ingresar"
             onPress={handleLogin}
-            disabled={loading}
-            style={styles.loginButton}
+              style={styles.loginButton}
           />
-         
+
+          {/* <BotonComponent
+              title={loading ? <ActivityIndicator color="#fff" /> : "Ingresar"}
+              onPress={handleLogin}
+              disabled={loading}
+              style={styles.loginButton}
+            /> */}
+
           <View style={styles.linkContainer}>
             <Text style={styles.registerText}>Si aún no tiene cuenta con nosotros, </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Registro")}>
@@ -137,7 +162,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F8FA",
   },
-  // Header styles moved to HeaderComponent.js
   scrollView: {
     flex: 1,
     width: '100%',
@@ -242,7 +266,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 15,
   },
-  // Footer styles moved to FooterComponent.js
-  // chatButton styles moved to ChatButtonComponent.js
-  // Menu styles moved to MenuComponent.js
 });
