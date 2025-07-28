@@ -55,7 +55,7 @@ export default function LoginScreen() {
 
     try {
       // Llama a la función de inicio de sesión
-      const result = await loginUser (email, password);
+      const result = await loginUser(email, password);
       if (result.success) {
         Alert.alert("Éxito", "¡Bienvenido!"); // Muestra un mensaje de éxito
       } else {
@@ -123,7 +123,9 @@ export default function LoginScreen() {
           <BotonComponent
             title="Iniciar Ingresar"
             onPress={handleLogin}
-              style={styles.loginButton}
+            style={styles.loginButton}
+          // disabled={!loading} // Desactiva el botón si está cargando
+
           />
 
           {/* <BotonComponent
@@ -139,9 +141,10 @@ export default function LoginScreen() {
               <Text style={styles.registerLink}>regístrese aquí</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={() => Alert.alert("Recuperar Contraseña", "Simulando ir a la pantalla de Recuperar Contraseña")}>
+          <TouchableOpacity onPress={() => navigation.navigate("RecuperarPassword")}>
             <Text style={styles.forgotPasswordLink}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
+
         </View>
 
         {/* Usar el FooterComponent */}
