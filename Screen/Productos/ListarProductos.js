@@ -8,27 +8,28 @@ import {
   Image,
   Dimensions,
   Alert,
-  TextInput,
-  ActivityIndicator,
+  NativeSyntheticEvent, // Importar para tipado de eventos de scroll
+  NativeScrollEvent,     // Importar para tipado de eventos de scroll
 } from "react-native";
 import HeaderComponent from "../../Components/HeaderComponent";
 import ChatButtonComponent from "../../Components/ChatButtonComponent";
 import MenuComponent from "../../Components/MenuComponent";
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from "@react-navigation/native";
-import { ListarProductos } from "../../Src/Services/ProductoService";
+import FooterComponent from "../../Components/FooterComponent"; // Importar FooterComponent
+import { useNavigation } from "@react-navigation/native"; // Importar useNavigation para navegación
+
 
 const { width } = Dimensions.get('window');
 
-export default function ListarProductosScreen() {
-  const navigation = useNavigation();
+export default function ListarProductos() {
+    const navigation = useNavigation(); // Obtener la instancia de navegación
   const [showMenu, setShowMenu] = useState(false);
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const categoriesScrollViewRef = useRef(null);
-  const currentScrollX = useRef(0);
+  const currentScrollX = useRef(0); // Referencia para almacenar la posición actual del scroll
 
   const toggleMenu = () => setShowMenu(!showMenu);
 
@@ -48,6 +49,13 @@ export default function ListarProductosScreen() {
       const newX = currentScrollX.current + (width * 0.3);
       categoriesScrollViewRef.current.scrollTo({ x: newX, animated: true });
     }
+  };
+
+  // La función handleSearch ahora solo actualiza el estado, el filtrado se hace en filteredProducts
+  const handleSearch = () => {
+    // No se necesita un Alert aquí, el filtrado es automático al cambiar searchText
+    // Si quisieras un "botón de búsqueda" que dispare la búsqueda, podrías llamar a una función aquí
+    // que fuerce la re-renderización o un filtro adicional, pero con onChangeText es más dinámico.
   };
 
   const cargarProductos = async () => {
@@ -75,116 +83,79 @@ export default function ListarProductosScreen() {
     "Accesorios",
     "Despensa",
     "Electrónica",
+    "Juguetes",
     "Libros",
     "Deportes",
   ];
 
-  const filteredProducts = productos.filter(product => {
-    const matchesCategory = selectedCategory === 'Todos' || product.categoria === selectedCategory;
-    const lowerSearch = searchText.toLowerCase();
-    const matchesSearch =
-      product.nombre?.toLowerCase().includes(lowerSearch) ||
-      product.descripcion?.toLowerCase().includes(lowerSearch) ||
-      product.vendedor?.toLowerCase().includes(lowerSearch) ||
-      product.usuario?.nombre?.toLowerCase().includes(lowerSearch);
-    return matchesCategory && matchesSearch;
-  });
+  // Datos de ejemplo para los productos
+  const products = [
+    // Ejemplo con imágenes locales. Asegúrate de que estas rutas existan en tu proyecto.
+    // Por ejemplo, si tienes una imagen 'cerveza.jpg' en Src/assets/images/
+    { id: '1', name: 'Cerveza Eisenbahn', image: require('../../Src/AssetsProductos/Images/cerveza.jpg') },
+    { id: '2', name: 'Yogurt Artesanal', image: require('../../Src/AssetsProductos/Images/yogurtArandanos.jpeg') },
+    { id: '3', name: 'Miel de Abeja Pura', image: require('../../Src/AssetsProductos/Images/miel.jpg') },
+
+    // Si no tienes las imágenes locales, puedes usar placeholders temporales:
+    // { id: '1', name: 'Cerveza Eisenbahn', image: 'https://placehold.co/300x200/F5F8FA/000000?text=Cerveza' },
+    // { id: '2', name: 'Yogurt Artesanal', image: 'https://placehold.co/300x200/F5F8FA/000000?text=Yogurt' },
+    // { id: '3', name: 'Miel de Abeja Pura', image: 'https://placehold.co/300x200/F5F8FA/000000?text=Miel' },
+    // { id: '4', name: 'Pan Artesanal', image: 'https://placehold.co/300x200/F5F8FA/000000?text=Pan' },
+    // { id: '5', name: 'Café Orgánico', image: 'https://placehold.co/300x200/F5F8FA/000000?text=Cafe' },
+    // { id: '6', name: 'Jabón Artesanal', image: 'https://placehold.co/300x200/F5F8FA/000000?text=Jabon' },
+  ];
 
   return (
     <View style={styles.container}>
       <HeaderComponent toggleMenu={toggleMenu} />
-      <ScrollView contentContainerStyle={styles.mainScrollViewContent}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.sectionTitle}>Explorar Productos</Text>
-        </View>
 
-        <View style={styles.searchBarContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar productos..."
-            placeholderTextColor="#888"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-          <TouchableOpacity onPress={() => {}} style={styles.searchButton}>
-            <Ionicons name="search-outline" size={24} color="#FFFFFF" />
+       {/* Título de la sección para Productos */}
+       <View style={styles.titleContainer}>
+          <Text style={styles.sectionTitle}>Productos</Text> {/* Texto cambiado a "Productos" */}
+        </View>
+        
+      {/* Categorías */}
+      <View style={styles.categoriesSection}>
+        {/* Nuevo View para envolver el contenido y aplicar padding horizontal */}
+        <View style={styles.categoriesContentWrapper}>
+          <TouchableOpacity style={styles.arrowButton} onPress={scrollLeft}>
+            <Ionicons name="chevron-back-outline" size={24} color="#6A0DAD" />
+          </TouchableOpacity>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesScrollView}
+            ref={categoriesScrollViewRef}
+            onScroll={handleScroll} // Añadir el manejador de scroll
+            scrollEventThrottle={16} // Ajustar para una actualización más frecuente del scroll
+          >
+            {categories.map((category, index) => (
+              <TouchableOpacity key={index} style={styles.categoryButton}>
+                <Text style={styles.categoryText}>{category}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <TouchableOpacity style={styles.arrowButton} onPress={scrollRight}>
+            <Ionicons name="chevron-forward-outline" size={24} color="#6A0DAD" />
           </TouchableOpacity>
         </View>
+      </View>
 
-        <View style={styles.categoriesSection}>
-          <View style={styles.categoriesContentWrapper}>
-            <TouchableOpacity style={styles.arrowButton} onPress={scrollLeft}>
-              <Ionicons name="chevron-back-outline" size={24} color="#6A0DAD" />
-            </TouchableOpacity>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoriesScrollView}
-              ref={categoriesScrollViewRef}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-            >
-              {categories.map((category, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.categoryButton,
-                    selectedCategory === category && styles.selectedCategoryButton,
-                  ]}
-                  onPress={() => setSelectedCategory(category)}
-                >
-                  <Text style={[
-                    styles.categoryText,
-                    selectedCategory === category && styles.selectedCategoryText
-                  ]}>{category}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity style={styles.arrowButton} onPress={scrollRight}>
-              <Ionicons name="chevron-forward-outline" size={24} color="#6A0DAD" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator size="large" color="#6A0DAD" style={{ marginTop: 40 }} />
-        ) : (
-          <View style={styles.productsGrid}>
-            {filteredProducts.map(product => {
-              const imagen = product.imagenes?.[0]?.nombreArchivo;
-              const uri = imagen
-                ? `http://172.30.6.28:8000/storage/imagenes/${imagen}`
-                : null;
-
-              return (
-                <TouchableOpacity
-                  key={product.id}
-                  style={styles.productCard}
-                  onPress={() => navigation.navigate('DetalleProducto', { product })}
-                >
-                  {uri ? (
-                    <Image source={{ uri }} style={styles.productImage} />
-                  ) : (
-                    <Image
-                      source={require('../../Src/AssetsProductos/Images/no-image.png')}
-                      style={styles.productImage}
-                    />
-                  )}
-                  <View style={styles.productInfo}>
-                    <Text style={styles.productName} numberOfLines={2}>{product.nombre}</Text>
-                    <Text style={styles.productPrice}>${product.precio}</Text>
-                    <Text style={styles.productSeller} numberOfLines={1}>
-                      {product.vendedor || product.usuarios?.nombre || "Vendedor desconocido"} - {product.ubicacion || "Ubicación"}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            {filteredProducts.length === 0 && (
-              <Text style={styles.noProductsText}>No hay productos que coincidan con tu búsqueda o categoría.</Text>
-            )}
-          </View>
-        )}
+      {/* Lista de Productos */}
+      <ScrollView contentContainerStyle={styles.productsScrollView} style={styles.productsContainer}>
+        {products.map(product => (
+          <TouchableOpacity key={product.id} style={styles.productCard} onPress={() =>  navigation.navigate('DetalleProducto', { product })}>
+            <Image
+              source={product.image} // La fuente ahora es el require()
+              style={styles.productImage}
+              onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
+              defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')} // Fallback image local
+            />
+            <Text style={styles.productName}>{product.name}</Text>
+          </TouchableOpacity>
+        ))}
+        {/* FooterComponent se coloca aquí si es parte del ScrollView principal */}
+        <FooterComponent />
       </ScrollView>
 
       <ChatButtonComponent />
@@ -194,33 +165,30 @@ export default function ListarProductosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F8FA", paddingTop: 60 },
-  mainScrollViewContent: { flexGrow: 1, alignItems: 'center', paddingBottom: 100 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F8FA",
+    paddingTop: 60, // Espacio para el header fijo
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingBottom: 100, // Espacio para el botón de chat
+  },
   titleContainer: {
     width: '100%',
     backgroundColor: '#6A0DAD',
     paddingVertical: 15,
     alignItems: 'center',
     marginBottom: 20,
-    margin: 40,
+    marginHorizontal: 0, // Asegura que no haya margen horizontal
+    paddingHorizontal: 0, // Asegura que no haya padding horizontal
+    margin: 40, // Añade margen para separar del borde de la pantalla
   },
-  sectionTitle: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF' },
-  searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: width * 0.9,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-    elevation: 3,
-  },
-  searchInput: { flex: 1, height: 45, fontSize: 16, color: '#333' },
-  searchButton: {
-    padding: 8,
-    backgroundColor: '#6A0DAD',
-    borderRadius: 8,
-    marginLeft: 10,
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF', // Color del texto del título
   },
   categoriesSection: {
     flexDirection: 'row',
@@ -241,8 +209,13 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 5,
   },
-  arrowButton: { padding: 10 },
-  categoriesScrollView: { alignItems: 'center', paddingHorizontal: 5 },
+  arrowButton: {
+    padding: 10,
+  },
+  categoriesScrollView: {
+    alignItems: 'center',
+    paddingHorizontal: 5, // Se mantiene para el padding interno del scroll
+  },
   categoryButton: {
     paddingVertical: 8,
     paddingHorizontal: 15,
@@ -250,15 +223,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
     marginHorizontal: 5,
   },
-  selectedCategoryButton: { backgroundColor: '#6A0DAD' },
-  categoryText: { fontSize: 16, color: '#333', fontWeight: '500' },
-  selectedCategoryText: { color: '#FFFFFF' },
-  productsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    width: width * 0.95,
-    paddingHorizontal: 5,
+  categoryText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  productsContainer: {
+    flex: 1,
+    paddingHorizontal: 10, // Se mantiene el padding horizontal para los productos
+    paddingTop: 10,
+  },
+  productsScrollView: {
+    alignItems: 'center',
   },
   productCard: {
     backgroundColor: '#FFFFFF',
@@ -276,13 +252,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
-  productInfo: { padding: 10 },
-  productName: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 5 },
-  productPrice: { fontSize: 15, fontWeight: 'bold', color: '#6A0DAD', marginBottom: 5 },
-  productSeller: { fontSize: 12, color: '#777' },
-  noProductsText: {
-    fontSize: 16,
-    color: '#777',
+  productName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    padding: 15,
     textAlign: 'center',
     marginTop: 20,
     width: '100%',

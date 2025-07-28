@@ -16,6 +16,12 @@ export default function MenuComponent({ isVisible, onClose }) {
     else if (item === "Carrito") {
       navigation.navigate("Carrito"); // Navegar a la pantalla ListarProductos
     } 
+    else if (item === "Home") {
+      navigation.navigate("Home"); // Navegar a la pantalla Home
+    }
+    else if (item === "Nosotros") {
+      navigation.navigate("Nosotros"); // Navegar a la pantalla Nosotros
+    }
     else {
       Alert.alert("Navegación", `Simulando ir a ${item}`);
     }
@@ -36,16 +42,10 @@ export default function MenuComponent({ isVisible, onClose }) {
           </TouchableOpacity>
           <Text style={styles.menuTitle}>Menú</Text>
           <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress("Home")}>
-            <Text style={styles.menuItemText}>Home</Text>
+            <Text style={styles.menuItemText}>Inicio</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress("Nosotros")}>
             <Text style={styles.menuItemText}>Nosotros</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress("Contacto")}>
-            <Text style={styles.menuItemText}>Contacto</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress("Precios")}>
-            <Text style={styles.menuItemText}>Precios</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress("Productos")}>
             <Text style={styles.menuItemText}>Productos</Text>

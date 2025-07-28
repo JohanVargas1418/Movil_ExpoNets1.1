@@ -22,6 +22,7 @@ const { width } = Dimensions.get('window');
 export default function CarritoScreen() {
   const navigation = useNavigation();
   const [showMenu, setShowMenu] = useState(false);
+  const [activeDeleteProductId, setActiveDeleteProductId] = useState(null); // Nuevo estado para controlar qué icono de eliminar está visible
 
   // Datos de ejemplo para los productos en el carrito
   const [cartItems, setCartItems] = useState([
@@ -47,6 +48,7 @@ export default function CarritoScreen() {
           text: "Eliminar",
           onPress: () => {
             setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+            setActiveDeleteProductId(null); // Ocultar el icono después de eliminar
             Alert.alert("Eliminado", "Producto eliminado del carrito.");
           },
           style: "destructive"
@@ -72,12 +74,30 @@ export default function CarritoScreen() {
     }
   };
 
+  // Nueva función para incrementar la cantidad
+  const handleIncrement = (itemId) => {
+    setCartItems(prevItems =>
+      prevItems.map(item =>
+        item.id === itemId ? { ...item, quantity: item.quantity + 1 } : item
+      )
+    );
+  };
+
+  // Nueva función para decrementar la cantidad
+  const handleDecrement = (itemId) => {
+    setCartItems(prevItems =>
+      prevItems.map(item =>
+        item.id === itemId && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
+      )
+    );
+  };
+
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
   const handleViewOrder = () => {
-    Alert.alert("Ver Orden", "Simulando la visualización de la orden.");
+    navigation.navigate("Orden");
     // Aquí iría la lógica para proceder con la orden
   };
 
@@ -92,55 +112,66 @@ export default function CarritoScreen() {
           <Text style={styles.sectionTitle}>Carrito de Compras</Text>
         </View>
 
-        {/* Breadcrumb / Ruta de navegación */}
-        <View style={styles.breadcrumb}>
-          <Text style={styles.breadcrumbText}>Home / Carrito</Text>
-        </View>
-
         {/* Tabla de Productos en el Carrito */}
         <View style={styles.tableContainer}>
           {/* Encabezados de la tabla */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.headerText, styles.headerImageCol]}>Imagen</Text> {/* Nueva columna para imagen */}
-            <Text style={[styles.headerText, styles.headerProductCol]}>Producto</Text>
+            <Text style={[styles.headerText, styles.headerProductInfoCol]}>Producto</Text> {/* Columna combinada */}
             <Text style={[styles.headerText, styles.headerPriceCol]}>Precio</Text>
             <Text style={[styles.headerText, styles.headerQuantityCol]}>Cantidad</Text>
             <Text style={[styles.headerText, styles.headerTotalCol]}>Total</Text>
-            <Text style={[styles.headerText, styles.headerActionCol]}>Acción</Text>
+            {/* La columna de acción se eliminó */}
           </View>
 
           {/* Filas de productos */}
           {cartItems.map(item => (
-            <View key={item.id} style={styles.tableRow}>
-              <View style={styles.rowImageCol}>
-                <Image
-                  source={item.image}
-                  style={styles.productThumbnail}
-                  onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
-                  defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')} // Fallback
-                />
+            <TouchableOpacity // La fila entera es ahora un TouchableOpacity
+              key={item.id}
+              style={styles.tableRow}
+              onPress={() => setActiveDeleteProductId(item.id === activeDeleteProductId ? null : item.id)} // Alternar visibilidad del icono
+            >
+              <View style={[styles.rowProductInfoCol, styles.productInfoCell]}> {/* Columna combinada */}
+                <View style={styles.thumbnailWrapper}> {/* Nuevo contenedor para la imagen y el icono */}
+                  <Image
+                    source={item.image}
+                    style={styles.productThumbnail}
+                    onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
+                    defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')} // Fallback
+                  />
+                  {activeDeleteProductId === item.id && ( // Renderizar condicionalmente el icono
+                    <TouchableOpacity
+                      style={styles.deleteIconContainer}
+                      onPress={() => handleRemoveItem(item.id)}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#DC3545" /> {/* Icono de "X" */}
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={styles.productNameInRow}>{item.name}</Text> {/* Nombre debajo de la imagen */}
               </View>
-              <Text style={[styles.rowText, styles.rowProductCol]}>{item.name}</Text>
               <Text style={[styles.rowText, styles.rowPriceCol]}>${item.price.toLocaleString('es-CO')}</Text>
-              <TextInput
-                style={[styles.quantityInput, styles.rowQuantityCol]}
-                keyboardType="numeric"
-                value={String(item.quantity)}
-                onChangeText={(text) => handleQuantityChange(item.id, text)}
-                onBlur={() => { // Al perder el foco, si está vacío, se establece en 1
-                  if (String(item.quantity).trim() === '' || String(item.quantity) === '0') {
-                    handleQuantityChange(item.id, '1');
-                  }
-                }}
-              />
+              <View style={[styles.quantityInputWrapper, styles.rowQuantityCol]}> {/* Wrapper para el TextInput y las flechas */}
+                <TouchableOpacity onPress={() => handleDecrement(item.id)} style={styles.quantityArrowButton}>
+                  <Ionicons name="chevron-down-outline" size={16} color="#6A0DAD" />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.quantityInput}
+                  keyboardType="numeric"
+                  value={String(item.quantity)}
+                  onChangeText={(text) => handleQuantityChange(item.id, text)}
+                  onBlur={() => { // Al perder el foco, si está vacío, se establece en 1
+                    if (String(item.quantity).trim() === '' || String(item.quantity) === '0') {
+                      handleQuantityChange(item.id, '1');
+                    }
+                  }}
+                />
+                <TouchableOpacity onPress={() => handleIncrement(item.id)} style={styles.quantityArrowButton}>
+                  <Ionicons name="chevron-up-outline" size={16} color="#6A0DAD" />
+                </TouchableOpacity>
+              </View>
               <Text style={[styles.rowText, styles.rowTotalCol]}>${(item.price * item.quantity).toLocaleString('es-CO')}</Text>
-              <TouchableOpacity
-                style={[styles.removeButton, styles.rowActionCol]}
-                onPress={() => handleRemoveItem(item.id)}
-              >
-                <Text style={styles.removeButtonText}>Quitar</Text>
-              </TouchableOpacity>
-            </View>
+              {/* La columna de acción se eliminó, el icono está en la imagen */}
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -153,8 +184,6 @@ export default function CarritoScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Footer Component */}
-        <FooterComponent />
       </ScrollView>
 
       {/* Chat Button Component */}
@@ -183,21 +212,12 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     marginBottom: 20,
+    margin:40,
   },
   sectionTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
-  },
-  breadcrumb: {
-    width: '90%',
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  breadcrumbText: {
-    fontSize: 14,
-    color: '#777',
   },
   tableContainer: {
     backgroundColor: '#FFFFFF',
@@ -237,52 +257,78 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   // Definición de anchos para las columnas del encabezado
-  headerImageCol: { width: '15%' }, // Columna para la imagen
-  headerProductCol: { width: '25%' },
-  headerPriceCol: { width: '15%' },
-  headerQuantityCol: { width: '15%' },
-  headerTotalCol: { width: '15%' },
-  headerActionCol: { width: '15%' },
+  headerProductInfoCol: { width: '30%' }, // Reducido para dar más espacio
+  headerPriceCol: { width: '18%' }, // Aumentado ligeramente
+  headerQuantityCol: { width: '27%' }, // Aumentado para el TextInput y flechas
+  headerTotalCol: { width: '25%' }, // Se mantiene el mismo
+  // headerActionCol: { width: '0%' }, // Eliminada la columna de acción
 
   // Definición de anchos para las columnas de las filas
-  rowImageCol: { width: '15%', alignItems: 'center' },
-  rowProductCol: { width: '25%' },
-  rowPriceCol: { width: '15%' },
-  rowQuantityCol: { width: '15%' },
-  rowTotalCol: { width: '15%' },
-  rowActionCol: { width: '15%', alignItems: 'center' },
-
-  productThumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: 5,
-    resizeMode: 'cover',
-  },
-  quantityInput: {
-    borderWidth: 1,
-    borderColor: '#CCC',
-    borderRadius: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 5,
-    textAlign: 'center',
-    fontSize: 14,
-    width: '80%', // Ajuste para que quepa en la columna
-    alignSelf: 'center',
-  },
-  removeButton: {
-    backgroundColor: '#DC3545', // Rojo para eliminar
-    paddingVertical: 8,
-    paddingHorizontal: 5,
-    borderRadius: 8,
+  rowProductInfoCol: {
+    width: '30%', // Ancho ajustado
+    flexDirection: 'column', // Apila imagen y texto
     alignItems: 'center',
     justifyContent: 'center',
-    width: '80%', // Ajuste para que quepa en la columna
-    alignSelf: 'center',
+    paddingHorizontal: 5, // Pequeño padding para el contenido
+    // position: 'relative', // Se movió al thumbnailWrapper
   },
-  removeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+  thumbnailWrapper: { // Nuevo estilo para el contenedor de la imagen y el icono
+    position: 'relative',
+    width: 60, // Mismo tamaño que la miniatura
+    height: 60, // Mismo tamaño que la miniatura
+    marginBottom: 5,
+  },
+  productThumbnail: {
+    width: 60, // Aumentado el tamaño de la miniatura
+    height: 60, // Aumentado el tamaño de la miniatura
+    borderRadius: 8, // Bordes más redondeados
+    resizeMode: 'cover',
+    // marginBottom: 5, // Se movió al thumbnailWrapper
+  },
+  productNameInRow: {
+    fontSize: 12, // Tamaño de fuente más pequeño para el nombre en la fila
+    color: '#333',
     fontWeight: 'bold',
+    textAlign: 'center',
+    flexWrap: 'wrap', // Permite que el texto se ajuste si es largo
+  },
+  rowPriceCol: { width: '18%' }, // Ancho ajustado
+  rowQuantityCol: {
+    width: '27%', // Ancho ajustado para la columna de cantidad
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rowTotalCol: { width: '25%' }, // Ancho ajustado
+  // rowActionCol: { width: '0%', alignItems: 'center' }, // Eliminada la columna de acción
+
+  quantityInputWrapper: { // Nuevo estilo para el wrapper del input y las flechas
+    flexDirection: 'row',
+    alignItems: 'center',
+   
+    borderColor: '#CCC',
+    borderRadius: 5,
+    width: '90%', // Ocupa casi todo el ancho de su columna
+    justifyContent: 'space-between', // Espacia el input y las flechas
+    paddingHorizontal: 2, // Pequeño padding interno
+  },
+  quantityInput: {
+     // Permite que el input ocupe el espacio restante
+    textAlign: 'center',
+    fontSize: 14,
+    paddingVertical: 5,
+    
+  },
+  quantityArrowButton: { // Estilo para los botones de flecha
+    padding: 5,
+  },
+  deleteIconContainer: { // Nuevo estilo para el contenedor del icono de eliminar
+    position: 'absolute',
+    top: -5, // Ajusta la posición vertical
+    right: -5, // Ajusta la posición horizontal
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Fondo semitransparente para el icono
+    borderRadius: 15, // Para que sea un círculo o un cuadrado redondeado
+    padding: 2,
+    zIndex: 1, // Asegura que esté por encima de la imagen
   },
   summaryContainer: {
     backgroundColor: '#FFFFFF',
