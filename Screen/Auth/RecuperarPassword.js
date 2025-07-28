@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import api from '../../Src/Service/Conexion'
+import api from '../../Src/Services/Conexion'
 import {
   View,
   Text,
