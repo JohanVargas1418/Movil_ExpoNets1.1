@@ -1,6 +1,6 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import ListarProductos from "../../../Screen//";
+import ListarProductosScreen from "../../../Screen//";
 import DetalleProducto from "../../../Screen//";
 import EditarProducto from "../../../Screen//";
 
@@ -10,8 +10,8 @@ export default function ProductosStack () {
     return (
         <Stack.Navigator>
             <Stack.Screen 
-                name= "ListarProductos"
-                component={ListarProductos}
+                name= "ListarProductosScreen"
+                component={ListarProductosScreen}
                 options={{ title: "Productos" }}
             />
              <Stack.Screen 
