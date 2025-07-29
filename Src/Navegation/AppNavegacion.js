@@ -8,9 +8,13 @@ import ListarProductos from '../../Screen/Productos/ListarProductos'; // Asegúr
 import DetalleProducto from '../../Screen/Productos/DetalleProducto'; // Asegúrate de que esta ruta sea correcta
 import ListarEventos from '../../Screen/Eventos/ListarEventos'; // Asegúrate de que esta ruta sea correcta
 import CarritoScreen from '../../Screen/Carrito/Carrito'; // Asegúrate de que esta ruta sea correcta
+<<<<<<< HEAD
 import HomeScreen from '../../Screen/Home/Home'; // Asegúrate de que esta ruta sea correcta
 import NosotrosScreen from '../../Screen/Nosotros/Nosotros';
 import OrdenScreen from '../../Screen/Carrito/orden'; // Asegúrate de que esta ruta sea correcta
+=======
+import RecuperarPassword from '../../Screen/Auth/RecuperarPassword'; // Asegúrate de que esta ruta sea correct
+>>>>>>> 2f845e0dc21503ae19e68a6ddf7883e7c0ccce35
 // Importa cualquier otra pantalla que necesites aquí
 
 const Stack = createStackNavigator();
@@ -18,7 +22,7 @@ const Stack = createStackNavigator();
 export default function AppNavegacion() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login"> 
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -39,7 +43,7 @@ export default function AppNavegacion() {
           component={DetalleProducto}
           options={{ headerShown: false }}
         />
-         <Stack.Screen // Añade la pantalla ListarProductos al Stack Navigator
+        <Stack.Screen // Añade la pantalla ListarProductos al Stack Navigator
           name="ListarEventos"
           component={ListarEventos}
           options={{ headerShown: false }}
@@ -49,6 +53,7 @@ export default function AppNavegacion() {
           component={CarritoScreen}
           options={{ headerShown: false }}
         />
+<<<<<<< HEAD
         <Stack.Screen
           name="Home"
           component={HomeScreen}
@@ -65,6 +70,15 @@ export default function AppNavegacion() {
           options={{ headerShown: false }}
         />
        
+=======
+
+        <Stack.Screen
+          name="RecuperarPassword"
+          component={RecuperarPassword}
+          options={{ headerShown: false }}
+        />
+
+>>>>>>> 2f845e0dc21503ae19e68a6ddf7883e7c0ccce35
       </Stack.Navigator>
     </NavigationContainer>
   );
