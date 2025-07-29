@@ -58,6 +58,7 @@ export default function LoginScreen() {
       const result = await loginUser(email, password);
       if (result.success) {
         Alert.alert("Éxito", "¡Bienvenido!"); // Muestra un mensaje de éxito
+        navigation.navigate("ListarProductos");
       } else {
         Alert.alert("Error", result.message || "Error al iniciar sesión"); // Muestra un mensaje de error
       }
@@ -78,7 +79,6 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Usar el HeaderComponent */}
       <HeaderComponent toggleMenu={toggleMenu} />
 
       <ScrollView contentContainerStyle={styles.scrollViewContent} style={styles.scrollView}>
@@ -128,13 +128,6 @@ export default function LoginScreen() {
 
           />
 
-          {/* <BotonComponent
-              title={loading ? <ActivityIndicator color="#fff" /> : "Ingresar"}
-              onPress={handleLogin}
-              disabled={loading}
-              style={styles.loginButton}
-            /> */}
-
           <View style={styles.linkContainer}>
             <Text style={styles.registerText}>Si aún no tiene cuenta con nosotros, </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Registro")}>
@@ -146,15 +139,10 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
         </View>
-
-        {/* Usar el FooterComponent */}
         <FooterComponent />
       </ScrollView>
-
-      {/* Usar el ChatButtonComponent */}
       <ChatButtonComponent />
 
-      {/* Menú Modal ahora como un componente separado */}
       <MenuComponent isVisible={showMenu} onClose={toggleMenu} />
     </KeyboardAvoidingView>
   );
