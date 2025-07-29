@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,21 +15,35 @@ import ChatButtonComponent from "../../Components/ChatButtonComponent";
 import FooterComponent from "../../Components/FooterComponent";
 import MenuComponent from "../../Components/MenuComponent";
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 const { width } = Dimensions.get('window');
 
 export default function CarritoScreen() {
   const navigation = useNavigation();
-  const [showMenu, setShowMenu] = useState(false);
-  const [activeDeleteProductId, setActiveDeleteProductId] = useState(null); // Nuevo estado para controlar qué icono de eliminar está visible
+  const route = useRoute();
+  const addedProduct = route.params?.addedProduct;
 
-  // Datos de ejemplo para los productos en el carrito
-  const [cartItems, setCartItems] = useState([
-    { id: '1', name: 'Miel', price: 40000.0, quantity: 1, image: require('../../Src/AssetsProductos/Images/miel.jpg') },
-    { id: '2', name: 'Cerveza', price: 18000.0, quantity: 1, image: require('../../Src/AssetsProductos/Images/cerveza.jpg') },
-    { id: '3', name: 'Yogurt', price: 12000.0, quantity: 2, image: require('../../Src/AssetsProductos/Images/yogurtArandanos.jpeg') },
-  ]);
+  const [showMenu, setShowMenu] = useState(false);
+  const [activeDeleteProductId, setActiveDeleteProductId] = useState(null);
+  const [cartItems, setCartItems] = useState([]);
+
+  useEffect(() => {
+    if (addedProduct) {
+      setCartItems((prevItems) => {
+        const existingItem = prevItems.find(item => item.id === addedProduct.id);
+        if (existingItem) {
+          return prevItems.map(item =>
+            item.id === addedProduct.id
+              ? { ...item, quantity: item.quantity + addedProduct.quantity }
+              : item
+          );
+        } else {
+          return [...prevItems, addedProduct];
+        }
+      });
+    }
+  }, [addedProduct]);
 
   const toggleMenu = () => {
     setShowMenu(!showMenu);
@@ -40,15 +54,12 @@ export default function CarritoScreen() {
       "Eliminar Producto",
       "¿Estás seguro de que quieres eliminar este producto del carrito?",
       [
-        {
-          text: "Cancelar",
-          style: "cancel"
-        },
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Eliminar",
           onPress: () => {
             setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
-            setActiveDeleteProductId(null); // Ocultar el icono después de eliminar
+            setActiveDeleteProductId(null);
             Alert.alert("Eliminado", "Producto eliminado del carrito.");
           },
           style: "destructive"
@@ -74,7 +85,6 @@ export default function CarritoScreen() {
     }
   };
 
-  // Nueva función para incrementar la cantidad
   const handleIncrement = (itemId) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
@@ -83,7 +93,6 @@ export default function CarritoScreen() {
     );
   };
 
-  // Nueva función para decrementar la cantidad
   const handleDecrement = (itemId) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
@@ -97,60 +106,58 @@ export default function CarritoScreen() {
   };
 
   const handleViewOrder = () => {
-    navigation.navigate("Orden");
-    // Aquí iría la lógica para proceder con la orden
+    navigation.navigate("OrdenScreen");
   };
+
+ 
 
   return (
     <View style={styles.container}>
-      {/* Header Component */}
       <HeaderComponent toggleMenu={toggleMenu} />
-
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {/* Título de la sección */}
         <View style={styles.titleContainer}>
           <Text style={styles.sectionTitle}>Carrito de Compras</Text>
         </View>
 
-        {/* Tabla de Productos en el Carrito */}
         <View style={styles.tableContainer}>
-          {/* Encabezados de la tabla */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.headerText, styles.headerProductInfoCol]}>Producto</Text> {/* Columna combinada */}
+            <Text style={[styles.headerText, styles.headerProductInfoCol]}>Producto</Text>
             <Text style={[styles.headerText, styles.headerPriceCol]}>Precio</Text>
             <Text style={[styles.headerText, styles.headerQuantityCol]}>Cantidad</Text>
             <Text style={[styles.headerText, styles.headerTotalCol]}>Total</Text>
-            {/* La columna de acción se eliminó */}
           </View>
 
-          {/* Filas de productos */}
           {cartItems.map(item => (
-            <TouchableOpacity // La fila entera es ahora un TouchableOpacity
+            <TouchableOpacity
               key={item.id}
               style={styles.tableRow}
-              onPress={() => setActiveDeleteProductId(item.id === activeDeleteProductId ? null : item.id)} // Alternar visibilidad del icono
+              onPress={() => setActiveDeleteProductId(item.id === activeDeleteProductId ? null : item.id)}
             >
-              <View style={[styles.rowProductInfoCol, styles.productInfoCell]}> {/* Columna combinada */}
-                <View style={styles.thumbnailWrapper}> {/* Nuevo contenedor para la imagen y el icono */}
+              <View style={[styles.rowProductInfoCol, styles.productInfoCell]}>
+                <View style={styles.thumbnailWrapper}>
                   <Image
-                    source={item.image}
+                    source={item.source}
                     style={styles.productThumbnail}
-                    onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
-                    defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')} // Fallback
+                    resizeMode="cover"
+                    onError={(e) =>
+                      console.log("Error al cargar imagen:", e.nativeEvent.error)
+                    }
                   />
-                  {activeDeleteProductId === item.id && ( // Renderizar condicionalmente el icono
+
+
+                  {activeDeleteProductId === item.id && (
                     <TouchableOpacity
                       style={styles.deleteIconContainer}
                       onPress={() => handleRemoveItem(item.id)}
                     >
-                      <Ionicons name="close-circle" size={20} color="#DC3545" /> {/* Icono de "X" */}
+                      <Ionicons name="close-circle" size={20} color="#DC3545" />
                     </TouchableOpacity>
                   )}
                 </View>
-                <Text style={styles.productNameInRow}>{item.name}</Text> {/* Nombre debajo de la imagen */}
+                <Text style={styles.productNameInRow}>{item.name}</Text>
               </View>
               <Text style={[styles.rowText, styles.rowPriceCol]}>${item.price.toLocaleString('es-CO')}</Text>
-              <View style={[styles.quantityInputWrapper, styles.rowQuantityCol]}> {/* Wrapper para el TextInput y las flechas */}
+              <View style={[styles.quantityInputWrapper, styles.rowQuantityCol]}>
                 <TouchableOpacity onPress={() => handleDecrement(item.id)} style={styles.quantityArrowButton}>
                   <Ionicons name="chevron-down-outline" size={16} color="#6A0DAD" />
                 </TouchableOpacity>
@@ -159,7 +166,7 @@ export default function CarritoScreen() {
                   keyboardType="numeric"
                   value={String(item.quantity)}
                   onChangeText={(text) => handleQuantityChange(item.id, text)}
-                  onBlur={() => { // Al perder el foco, si está vacío, se establece en 1
+                  onBlur={() => {
                     if (String(item.quantity).trim() === '' || String(item.quantity) === '0') {
                       handleQuantityChange(item.id, '1');
                     }
@@ -170,12 +177,10 @@ export default function CarritoScreen() {
                 </TouchableOpacity>
               </View>
               <Text style={[styles.rowText, styles.rowTotalCol]}>${(item.price * item.quantity).toLocaleString('es-CO')}</Text>
-              {/* La columna de acción se eliminó, el icono está en la imagen */}
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Subtotal y botón de orden */}
         <View style={styles.summaryContainer}>
           <Text style={styles.subtotalTitle}>SUBTOTAL</Text>
           <Text style={styles.subtotalValue}>${calculateSubtotal().toLocaleString('es-CO')}</Text>
@@ -183,13 +188,9 @@ export default function CarritoScreen() {
             <Text style={styles.viewOrderButtonText}>Ver orden</Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
 
-      {/* Chat Button Component */}
       <ChatButtonComponent />
-
-      {/* Menu Component */}
       <MenuComponent isVisible={showMenu} onClose={toggleMenu} />
     </View>
   );
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     marginBottom: 20,
-    margin:40,
+    margin: 40,
   },
   sectionTitle: {
     fontSize: 24,
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
   quantityInputWrapper: { // Nuevo estilo para el wrapper del input y las flechas
     flexDirection: 'row',
     alignItems: 'center',
-   
+
     borderColor: '#CCC',
     borderRadius: 5,
     width: '90%', // Ocupa casi todo el ancho de su columna
@@ -312,11 +313,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2, // Pequeño padding interno
   },
   quantityInput: {
-     // Permite que el input ocupe el espacio restante
+    // Permite que el input ocupe el espacio restante
     textAlign: 'center',
     fontSize: 14,
     paddingVertical: 5,
-    
+
   },
   quantityArrowButton: { // Estilo para los botones de flecha
     padding: 5,

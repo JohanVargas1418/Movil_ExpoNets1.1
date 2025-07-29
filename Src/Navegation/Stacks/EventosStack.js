@@ -1,6 +1,6 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import ListarEventos from "../../../Screen//Listar";
+import ListarEventosScreen from "../../../Screen/Eventos/ListarEventos";
 import DetalleEvento from "../../../Screen//Detalle";
 import EditarCita from "../../../Screen//Editar";
 
@@ -11,7 +11,7 @@ export default function EventosStack () {
         <Stack.Navigator>
             <Stack.Screen 
                 name= "ListarEventos"
-                component={ListarEventos}
+                component={ListarEventosScreen}
                 options={{ title: "Eventos" }}
             />
              <Stack.Screen 

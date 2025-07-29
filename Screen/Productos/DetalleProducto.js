@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -21,78 +21,101 @@ const { width } = Dimensions.get('window');
 export default function DetalleProducto() {
   const navigation = useNavigation();
   const route = useRoute();
-  const [quantity, setQuantity] = useState('1'); // Estado para la cantidad del producto
-  const [showMenu, setShowMenu] = useState(false);
+  const { product } = route.params;
+  const maxStock = Number(product.cantidad) || 1;
 
-  // Obtener el producto de los parámetros de navegación
-  const product = route.params?.product || {
-    id: 'default',
-    name: 'Producto No Encontrado',
-    price: 0,
-    image: require('../../Src/AssetsProductos/Images/no-image.png'),
-    description: 'Este producto no está disponible o no se ha cargado correctamente.',
-    seller: 'N/A',
-    location: 'N/A',
-  };
+
+  const [quantity, setQuantity] = useState("1");
+  const [showMenu, setShowMenu] = useState(false);
 
   const toggleMenu = () => {
     setShowMenu(!showMenu);
   };
 
-  // Función para aumentar la cantidad
+  const imageUrl = product.imagenes?.[0]?.nombreArchivo
+    ? `http://172.30.6.28:8000/storage/imagenes/${product.imagenes[0].nombreArchivo}`
+    : null;
+
   const handleIncreaseQuantity = () => {
-    setQuantity(prevQuantity => String(parseInt(prevQuantity, 10) + 1));
+    setQuantity(prev => {
+      const current = parseInt(prev, 10);
+      const next = current + 1;
+      return next <= maxStock ? String(next) : String(current); // No pasar del stock
+    });
   };
 
-  // Función para disminuir la cantidad
   const handleDecreaseQuantity = () => {
-    setQuantity(prevQuantity => {
-      const currentQty = parseInt(prevQuantity, 10);
-      return String(Math.max(1, currentQty - 1)); // Asegura que no sea menor que 1
+    setQuantity(prev => {
+      const current = parseInt(prev, 10);
+      return String(Math.max(1, current - 1)); // No bajar de 1
     });
   };
 
   const handleAddToCart = () => {
-    // Asegurarse de que el precio sea un número para el cálculo
-    const parsedPrice = parseFloat(product.price.replace('.', '').replace(',', '.'));
+    const parsedPrice = Number(
+      product.precio?.toString().replace(".", "").replace(",", ".")
+    );
     const itemQuantity = parseInt(quantity, 10);
 
     if (isNaN(itemQuantity) || itemQuantity <= 0) {
-      Alert.alert("Cantidad Inválida", "Por favor, ingresa una cantidad válida (número mayor que 0).");
+      Alert.alert("Cantidad inválida", "Ingresa una cantidad válida.");
       return;
     }
 
-    Alert.alert("Añadir al Carrito", `Has añadido ${itemQuantity} unidades de "${product.name}" al carrito. Total: $${(parsedPrice * itemQuantity).toLocaleString('es-CO')}`);
-    // Aquí iría la lógica para añadir el producto al carrito global o a un contexto/estado persistente
+    // Aquí podrías guardar el producto en un estado global o contexto si fuera necesario
+
+    navigation.navigate("CarritoScreen", {
+      addedProduct: {
+        id: product.id,
+        name: product.nombre,
+        price: parsedPrice,
+        quantity: itemQuantity,
+        source: imageUrl
+          ? { uri: imageUrl }
+          : require("../../Src/AssetsProductos/Images/no-image.png")
+      }
+    });
+
+
   };
+
 
   return (
     <View style={styles.container}>
-      {/* Header Component */}
       <HeaderComponent toggleMenu={toggleMenu} />
 
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-
-        {/* Título de la sección */}
         <Text style={styles.sectionTitle}>Información del producto</Text>
 
-        {/* Imagen del Producto */}
         <View style={styles.imageContainer}>
           <Image
-            source={product.image}
+            source={
+              imageUrl
+                ? { uri: imageUrl }
+                : require("../../Src/AssetsProductos/Images/no-image.png")
+            }
             style={styles.productImage}
-            onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
-            defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')}
+            resizeMode="cover"
+            onError={(e) =>
+              console.log("Error al cargar imagen:", e.nativeEvent.error)
+            }
           />
         </View>
 
-        {/* Detalles del Producto */}
         <View style={styles.detailsCard}>
-          <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.productPrice}>Precio: ${parseFloat(product.price.replace('.', '').replace(',', '.')).toLocaleString('es-CO')}</Text>
-          {product.seller && product.location && (
-            <Text style={styles.productSellerLocation}>Vendedor: {product.seller} desde {product.location}</Text>
-          )}
+          <Text style={styles.productName}>{product.nombre}</Text>
+
+          <Text style={styles.productPrice}>
+            Precio: ${Number(product.precio).toLocaleString("es-CO")}
+          </Text>
+          <Text style={styles.productSellerLocation}>
+            Cantidad: {Number(product.cantidad).toLocaleString("es-CO")}
+          </Text>
+
+          <Text style={styles.productSellerLocation}>
+            Vendedor: {product.usuario?.nombre || "No disponible"} desde {product.usuario?.direccion || "No disponible"}
+          </Text>
+
 
           <View style={styles.quantityContainer}>
             <Text style={styles.quantityLabel}>Cantidad:</Text>
@@ -104,15 +127,14 @@ export default function DetalleProducto() {
               keyboardType="numeric"
               value={quantity}
               onChangeText={(text) => {
-                // Limpia el texto para asegurar que solo haya números
-                const cleanedText = text.replace(/[^0-9]/g, '');
-                // Si el texto está vacío, establece la cantidad en '1' para evitar NaN o 0
-                // De lo contrario, convierte a número, asegura que sea al menos 1, y luego a string
-                setQuantity(String(Math.max(1, parseInt(cleanedText || '1', 10))));
+                const cleaned = text.replace(/[^0-9]/g, '');
+                const parsed = Math.max(1, parseInt(cleaned || '1', 10));
+                setQuantity(String(Math.min(parsed, maxStock))); // Límite superior
               }}
               maxLength={3}
               textAlign="center"
             />
+
             <TouchableOpacity onPress={handleIncreaseQuantity} style={styles.quantityButton}>
               <Ionicons name="add-outline" size={24} color="#6A0DAD" />
             </TouchableOpacity>
@@ -123,15 +145,11 @@ export default function DetalleProducto() {
           </TouchableOpacity>
 
           <Text style={styles.descriptionTitle}>Descripción</Text>
-          <Text style={styles.descriptionText}>{product.description}</Text>
+          <Text style={styles.descriptionText}>{product.descripcion}</Text>
         </View>
-
       </ScrollView>
 
-      {/* Chat Button Component */}
       <ChatButtonComponent />
-
-      {/* Menu Component */}
       <MenuComponent isVisible={showMenu} onClose={toggleMenu} />
     </View>
   );
@@ -142,6 +160,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F8FA",
     paddingTop: 60,
+    margin: 'auto',
   },
   scrollViewContent: {
     flexGrow: 1,
@@ -210,9 +229,9 @@ const styles = StyleSheet.create({
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // Centra los controles de cantidad
+    justifyContent: 'center',
     marginBottom: 20,
-    width: '100%', // Asegura que ocupe todo el ancho de la tarjeta
+    width: '100%',
   },
   quantityLabel: {
     fontSize: 18,
@@ -220,7 +239,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     fontWeight: '600',
   },
-  quantityButton: { // Nuevo estilo para los botones de cantidad
+  quantityButton: {
     padding: 10,
     backgroundColor: '#E0E0E0',
     borderRadius: 5,
@@ -234,7 +253,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 16,
     color: '#333',
-    width: 60, // Ancho ajustado para el input de cantidad
+    width: 60,
     textAlign: 'center',
   },
   addToCartButton: {

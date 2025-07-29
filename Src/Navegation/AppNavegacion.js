@@ -9,6 +9,7 @@ import DetalleProducto from '../../Screen/Productos/DetalleProducto'; // Asegúr
 import ListarEventos from '../../Screen/Eventos/ListarEventos'; // Asegúrate de que esta ruta sea correcta
 import CarritoScreen from '../../Screen/Carrito/Carrito'; // Asegúrate de que esta ruta sea correcta
 import RecuperarPassword from '../../Screen/Auth/RecuperarPassword'; // Asegúrate de que esta ruta sea correct
+import OrdenScreen from '../../Screen/Carrito/orden'; // Asegúrate de que esta ruta sea correcta
 // Importa cualquier otra pantalla que necesites aquí
 
 const Stack = createStackNavigator();
@@ -42,11 +43,9 @@ export default function AppNavegacion() {
           component={ListarEventos}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="Carrito"
-          component={CarritoScreen}
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="CarritoScreen" component={CarritoScreen} />
+        <Stack.Screen name="OrdenScreen" component={OrdenScreen} />
+
 
         <Stack.Screen
           name="RecuperarPassword"
