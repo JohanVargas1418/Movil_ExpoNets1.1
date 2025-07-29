@@ -62,7 +62,6 @@ export default function DetalleProducto() {
       return;
     }
 
-    // Aquí podrías guardar el producto en un estado global o contexto si fuera necesario
 
     navigation.navigate("CarritoScreen", {
       addedProduct: {

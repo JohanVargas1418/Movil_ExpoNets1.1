@@ -8,14 +8,11 @@ import ListarProductos from '../../Screen/Productos/ListarProductos'; // Asegúr
 import DetalleProducto from '../../Screen/Productos/DetalleProducto'; // Asegúrate de que esta ruta sea correcta
 import ListarEventos from '../../Screen/Eventos/ListarEventos'; // Asegúrate de que esta ruta sea correcta
 import CarritoScreen from '../../Screen/Carrito/Carrito'; // Asegúrate de que esta ruta sea correcta
-
 import HomeScreen from '../../Screen/Home/Home'; // Asegúrate de que esta ruta sea correcta
 import NosotrosScreen from '../../Screen/Nosotros/Nosotros';
 import OrdenScreen from '../../Screen/Carrito/orden'; // Asegúrate de que esta ruta sea correcta
-
 import RecuperarPassword from '../../Screen/Auth/RecuperarPassword'; // Asegúrate de que esta ruta sea correct
 
-import OrdenScreen from '../../Screen/Carrito/orden'; // Asegúrate de que esta ruta sea correcta
 
 // Importa cualquier otra pantalla que necesites aquí
 

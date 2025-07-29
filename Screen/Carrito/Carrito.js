@@ -105,11 +105,19 @@ export default function CarritoScreen() {
     return cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  const handleViewOrder = () => {
-    navigation.navigate("OrdenScreen");
-  };
+ const handleViewOrder = () => {
+  navigation.navigate("OrdenScreen", {
+    cartItems: cartItems.map(item => ({
+      nombre: item.name,
+      cantidad: item.quantity,
+      precio: item.price,
+      imagen: item.source?.uri ?? null
+    }))
+  });
+};
 
- 
+
+
 
   return (
     <View style={styles.container}>
