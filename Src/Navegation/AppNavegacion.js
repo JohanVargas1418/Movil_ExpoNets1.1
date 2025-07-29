@@ -10,7 +10,7 @@ import ListarEventos from '../../Screen/Eventos/ListarEventos'; // Asegúrate de
 import CarritoScreen from '../../Screen/Carrito/Carrito'; // Asegúrate de que esta ruta sea correcta
 import HomeScreen from '../../Screen/Home/Home'; // Asegúrate de que esta ruta sea correcta
 import NosotrosScreen from '../../Screen/Nosotros/Nosotros';
-import OrdenScreen from '../../Screen/Carrito/Orden'; // Asegúrate de que esta ruta sea correcta
+import OrdenScreen from '../../Screen/Carrito/orden'; // Asegúrate de que esta ruta sea correcta
 // Importa cualquier otra pantalla que necesites aquí
 
 const Stack = createStackNavigator();
