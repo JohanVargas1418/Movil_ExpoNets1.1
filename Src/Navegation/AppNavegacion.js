@@ -14,6 +14,15 @@ import OrdenScreen from '../../Screen/Carrito/orden'; // Asegúrate de que esta 
 import RecuperarPassword from '../../Screen/Auth/RecuperarPassword'; // Asegúrate de que esta ruta sea correct
 
 
+
+import HomeScreen from '../../Screen/Home/Home'; // Asegúrate de que esta ruta sea correcta
+import NosotrosScreen from '../../Screen/Nosotros/Nosotros';
+import OrdenScreen from '../../Screen/Carrito/orden'; // Asegúrate de que esta ruta sea correcta
+
+import RecuperarPassword from '../../Screen/Auth/RecuperarPassword'; // Asegúrate de que esta ruta sea correct
+
+
+
 // Importa cualquier otra pantalla que necesites aquí
 
 const Stack = createStackNavigator();
@@ -73,7 +82,7 @@ export default function AppNavegacion() {
           component={OrdenScreen}
           options={{ headerShown: false }}
         />
-       
+
 
 
         <Stack.Screen
@@ -81,6 +90,7 @@ export default function AppNavegacion() {
           component={RecuperarPassword}
           options={{ headerShown: false }}
         />
+
 
 
       </Stack.Navigator>
