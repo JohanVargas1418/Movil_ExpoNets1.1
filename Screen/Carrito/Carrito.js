@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,44 +10,93 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { Ionicons } from '@expo/vector-icons';
 import HeaderComponent from "../../Components/HeaderComponent";
 import ChatButtonComponent from "../../Components/ChatButtonComponent";
-import FooterComponent from "../../Components/FooterComponent";
 import MenuComponent from "../../Components/MenuComponent";
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from "@react-navigation/native";
 
 const { width } = Dimensions.get('window');
 
+// Define un prefijo para la clave del carrito, al cual se le añadirá el ID del usuario
+const ASYNC_STORAGE_CART_PREFIX = 'cartItems_';
+
 export default function CarritoScreen() {
   const navigation = useNavigation();
-  const route = useRoute();
-  const addedProduct = route.params?.addedProduct;
 
   const [showMenu, setShowMenu] = useState(false);
   const [activeDeleteProductId, setActiveDeleteProductId] = useState(null);
   const [cartItems, setCartItems] = useState([]);
+  const [isCartLoaded, setIsCartLoaded] = useState(false); // Estado para saber si el carrito ya se cargó
 
-  useEffect(() => {
-    if (addedProduct) {
-      setCartItems((prevItems) => {
-        const existingItem = prevItems.find(item => item.id === addedProduct.id);
-        if (existingItem) {
-          return prevItems.map(item =>
-            item.id === addedProduct.id
-              ? { ...item, quantity: item.quantity + addedProduct.quantity }
-              : item
-          );
-        } else {
-          return [...prevItems, addedProduct];
-        }
-      });
+  const toggleMenu = () => setShowMenu(!showMenu);
+
+  // Función para cargar el carrito desde AsyncStorage, ahora específica por usuario
+  const loadCart = useCallback(async () => {
+    try {
+      const userId = await AsyncStorage.getItem("userId"); // Obtiene el ID del usuario logueado
+
+      if (!userId) {
+        // Si no hay ID de usuario, significa que no hay sesión activa
+        setCartItems([]); // Asegura que el carrito esté vacío
+        setIsCartLoaded(true);
+        // Opcional: Podrías redirigir al login si el carrito es una pantalla que siempre requiere autenticación
+        // Alert.alert("No logueado", "Por favor, inicia sesión para ver tu carrito.");
+        // navigation.navigate("Login");
+        return;
+      }
+
+      // Construye la clave específica para el carrito de este usuario
+      const userCartKey = ASYNC_STORAGE_CART_PREFIX + userId;
+      const storedCart = await AsyncStorage.getItem(userCartKey);
+
+      if (storedCart) {
+        setCartItems(JSON.parse(storedCart));
+      } else {
+        setCartItems([]); // Si no hay carrito para este usuario, inicializa vacío
+      }
+      setIsCartLoaded(true); // Marca el carrito como cargado
+    } catch (error) {
+      console.error("Error al cargar el carrito:", error);
+      setIsCartLoaded(true); // Marca como cargado incluso si hay error
     }
-  }, [addedProduct]);
+  }, []);
 
-  const toggleMenu = () => {
-    setShowMenu(!showMenu);
-  };
+  // Carga el carrito cada vez que la pantalla obtiene el foco
+  useFocusEffect(
+    useCallback(() => {
+      loadCart();
+      return () => {
+        // Limpieza opcional al perder el foco
+      };
+    }, [loadCart])
+  );
+
+  // Guarda el carrito en AsyncStorage cada vez que 'cartItems' cambia
+  useEffect(() => {
+    if (isCartLoaded) { // Solo guarda si el carrito ya se cargó inicialmente
+      const saveCart = async () => {
+        try {
+          const userId = await AsyncStorage.getItem("userId"); // Obtiene el ID del usuario logueado
+          if (userId) {
+            // Si hay un usuario logueado, guarda el carrito con su clave específica
+            const userCartKey = ASYNC_STORAGE_CART_PREFIX + userId;
+            await AsyncStorage.setItem(userCartKey, JSON.stringify(cartItems));
+          } else {
+            // Si no hay usuario logueado, podrías limpiar cualquier carrito genérico antiguo
+            // Esto es importante para evitar que carritos de sesiones anteriores persistan sin usuario
+            await AsyncStorage.removeItem('cartItems'); // Elimina la clave genérica antigua si existiera
+          }
+        } catch (error) {
+          console.error("Error al guardar el carrito:", error);
+        }
+      };
+      saveCart();
+    }
+  }, [cartItems, isCartLoaded]);
+
+  // --- Funciones de gestión de ítems del carrito ---
 
   const handleRemoveItem = (itemId) => {
     Alert.alert(
@@ -59,7 +108,7 @@ export default function CarritoScreen() {
           text: "Eliminar",
           onPress: () => {
             setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
-            setActiveDeleteProductId(null);
+            setActiveDeleteProductId(null); // Oculta el icono de eliminar
             Alert.alert("Eliminado", "Producto eliminado del carrito.");
           },
           style: "destructive"
@@ -68,27 +117,12 @@ export default function CarritoScreen() {
     );
   };
 
-  const handleQuantityChange = (itemId, newQuantity) => {
-    const parsedQuantity = parseInt(newQuantity, 10);
-    if (!isNaN(parsedQuantity) && parsedQuantity > 0) {
-      setCartItems(prevItems =>
-        prevItems.map(item =>
-          item.id === itemId ? { ...item, quantity: parsedQuantity } : item
-        )
-      );
-    } else if (newQuantity === '') {
-      setCartItems(prevItems =>
-        prevItems.map(item =>
-          item.id === itemId ? { ...item, quantity: '' } : item
-        )
-      );
-    }
-  };
-
   const handleIncrement = (itemId) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item.id === itemId ? { ...item, quantity: item.quantity + 1 } : item
+        item.id === itemId && item.quantity < (item.maxStock || 999)
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       )
     );
   };
@@ -96,28 +130,53 @@ export default function CarritoScreen() {
   const handleDecrement = (itemId) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item.id === itemId && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
+        item.id === itemId && item.quantity > 1
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
       )
     );
   };
 
-  const calculateSubtotal = () => {
-    return cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const handleQuantityChange = (itemId, text) => {
+    const cleaned = text.replace(/[^0-9]/g, '');
+    let parsed = parseInt(cleaned || '0', 10);
+    if (isNaN(parsed) || parsed < 1) parsed = 1;
+
+    setCartItems(prevItems =>
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          const max = item.maxStock || 999;
+          const newQty = Math.min(parsed, max);
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      })
+    );
   };
 
- const handleViewOrder = () => {
-  navigation.navigate("OrdenScreen", {
-    cartItems: cartItems.map(item => ({
-      nombre: item.name,
-      cantidad: item.quantity,
-      precio: item.price,
-      imagen: item.source?.uri ?? null
-    }))
-  });
-};
+  const calculateSubtotal = () => {
+    return cartItems.reduce((sum, item) => {
+      const qty = parseInt(item.quantity, 10);
+      if (isNaN(qty) || qty < 1) return sum;
+      return sum + (item.price * qty);
+    }, 0);
+  };
 
+  const handleViewOrder = () => {
+    if (cartItems.length === 0) {
+      Alert.alert("Carrito Vacío", "No puedes ver una orden sin productos en el carrito.");
+      return;
+    }
 
-
+    navigation.navigate("Orden", { // Corregido para usar "OrdenScreen" según tu AppNavegacion.js
+      cartItems: cartItems.map(item => ({
+        nombre: item.name,
+        cantidad: parseInt(item.quantity, 10) || 1,
+        precio: item.price,
+        imagen: item.imageUri ?? null,
+      })),
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -135,64 +194,90 @@ export default function CarritoScreen() {
             <Text style={[styles.headerText, styles.headerTotalCol]}>Total</Text>
           </View>
 
-          {cartItems.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.tableRow}
-              onPress={() => setActiveDeleteProductId(item.id === activeDeleteProductId ? null : item.id)}
-            >
-              <View style={[styles.rowProductInfoCol, styles.productInfoCell]}>
-                <View style={styles.thumbnailWrapper}>
-                  <Image
-                    source={item.source}
-                    style={styles.productThumbnail}
-                    resizeMode="cover"
-                    onError={(e) =>
-                      console.log("Error al cargar imagen:", e.nativeEvent.error)
-                    }
-                  />
+          {!isCartLoaded ? (
+            <Text style={{ padding: 20, textAlign: 'center', color: '#777' }}>
+              Cargando carrito...
+            </Text>
+          ) : cartItems.length === 0 ? (
+            <Text style={{ padding: 20, textAlign: 'center', color: '#777' }}>
+              Tu carrito está vacío.
+            </Text>
+          ) : (
+            cartItems.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.tableRow}
+                onPress={() => setActiveDeleteProductId(item.id === activeDeleteProductId ? null : item.id)}
+              >
+                <View style={[styles.rowProductInfoCol, styles.productInfoCell]}>
+                  <View style={styles.thumbnailWrapper}>
+                    <Image
+                      source={
+                        item.imageUri
+                          ? { uri: item.imageUri }
+                          : require("../../Src/AssetsProductos/Images/no-image.png")
+                      }
+                      style={styles.productThumbnail}
+                      resizeMode="cover"
+                      onError={(e) => console.log("Error al cargar imagen:", e.nativeEvent.error)}
+                    />
 
-
-                  {activeDeleteProductId === item.id && (
-                    <TouchableOpacity
-                      style={styles.deleteIconContainer}
-                      onPress={() => handleRemoveItem(item.id)}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#DC3545" />
-                    </TouchableOpacity>
-                  )}
+                    {activeDeleteProductId === item.id && (
+                      <TouchableOpacity
+                        style={styles.deleteIconContainer}
+                        onPress={() => handleRemoveItem(item.id)}
+                      >
+                        <Ionicons name="close-circle" size={20} color="#DC3545" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.productNameInRow}>{item.name}</Text>
                 </View>
-                <Text style={styles.productNameInRow}>{item.name}</Text>
-              </View>
-              <Text style={[styles.rowText, styles.rowPriceCol]}>${item.price.toLocaleString('es-CO')}</Text>
-              <View style={[styles.quantityInputWrapper, styles.rowQuantityCol]}>
-                <TouchableOpacity onPress={() => handleDecrement(item.id)} style={styles.quantityArrowButton}>
-                  <Ionicons name="chevron-down-outline" size={16} color="#6A0DAD" />
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.quantityInput}
-                  keyboardType="numeric"
-                  value={String(item.quantity)}
-                  onChangeText={(text) => handleQuantityChange(item.id, text)}
-                  onBlur={() => {
-                    if (String(item.quantity).trim() === '' || String(item.quantity) === '0') {
-                      handleQuantityChange(item.id, '1');
-                    }
-                  }}
-                />
-                <TouchableOpacity onPress={() => handleIncrement(item.id)} style={styles.quantityArrowButton}>
-                  <Ionicons name="chevron-up-outline" size={16} color="#6A0DAD" />
-                </TouchableOpacity>
-              </View>
-              <Text style={[styles.rowText, styles.rowTotalCol]}>${(item.price * item.quantity).toLocaleString('es-CO')}</Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.rowText, styles.rowPriceCol]}>
+                  ${item.price.toLocaleString('es-CO')}
+                </Text>
+                <View style={[styles.quantityInputWrapper, styles.rowQuantityCol]}>
+                  <TouchableOpacity onPress={() => handleDecrement(item.id)} style={styles.quantityArrowButton}>
+                    <Ionicons name="chevron-down-outline" size={16} color="#6A0DAD" />
+                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.quantityInput}
+                    keyboardType="numeric"
+                    maxLength={3}
+                    value={String(item.quantity)}
+                    onChangeText={text => handleQuantityChange(item.id, text)}
+                    onBlur={() => {
+                      const qty = parseInt(item.quantity, 10);
+                      if (isNaN(qty) || qty < 1) {
+                        handleQuantityChange(item.id, '1');
+                      } else if (qty > (item.maxStock || 999)) {
+                        handleQuantityChange(item.id, String(item.maxStock || 999));
+                      }
+                    }}
+                  />
+                  <TouchableOpacity onPress={() => handleIncrement(item.id)} style={styles.quantityArrowButton}>
+                    <Ionicons name="chevron-up-outline" size={16} color="#6A0DAD" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={[styles.rowText, styles.rowTotalCol]}>
+                  ${((item.price) * (parseInt(item.quantity, 10) || 1)).toLocaleString('es-CO')}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         <View style={styles.summaryContainer}>
           <Text style={styles.subtotalTitle}>SUBTOTAL</Text>
           <Text style={styles.subtotalValue}>${calculateSubtotal().toLocaleString('es-CO')}</Text>
-          <TouchableOpacity style={styles.viewOrderButton} onPress={handleViewOrder}>
+          <TouchableOpacity
+            style={[
+              styles.viewOrderButton,
+              cartItems.length === 0 && { backgroundColor: '#aaa' }
+            ]}
+            onPress={handleViewOrder}
+            disabled={cartItems.length === 0}
+          >
             <Text style={styles.viewOrderButtonText}>Ver orden</Text>
           </TouchableOpacity>
         </View>
@@ -208,12 +293,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F8FA",
-    paddingTop: 60, // Espacio para el header fijo
+    paddingTop: 60,
   },
   scrollViewContent: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingBottom: 100, // Espacio para el botón de chat
+    paddingBottom: 100,
   },
   titleContainer: {
     width: '100%',
@@ -231,18 +316,18 @@ const styles = StyleSheet.create({
   tableContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 15,
-    width: width * 0.95, // Ocupa casi todo el ancho para la tabla
+    width: width * 0.95,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 8,
     marginBottom: 20,
-    overflow: 'hidden', // Para que los bordes redondeados se apliquen bien
+    overflow: 'hidden',
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#E0E0E0', // Fondo para el encabezado de la tabla
+    backgroundColor: '#E0E0E0',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#CCC',
@@ -258,93 +343,89 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-    alignItems: 'center', // Centra verticalmente los elementos de la fila
+    alignItems: 'center',
   },
   rowText: {
     fontSize: 14,
     color: '#555',
     textAlign: 'center',
   },
-  // Definición de anchos para las columnas del encabezado
-  headerProductInfoCol: { width: '30%' }, // Reducido para dar más espacio
-  headerPriceCol: { width: '18%' }, // Aumentado ligeramente
-  headerQuantityCol: { width: '27%' }, // Aumentado para el TextInput y flechas
-  headerTotalCol: { width: '25%' }, // Se mantiene el mismo
-  // headerActionCol: { width: '0%' }, // Eliminada la columna de acción
-
-  // Definición de anchos para las columnas de las filas
+  headerProductInfoCol: { width: '30%' },
+  headerPriceCol: { width: '18%' },
+  headerQuantityCol: { width: '27%' },
+  headerTotalCol: { width: '25%' },
   rowProductInfoCol: {
-    width: '30%', // Ancho ajustado
-    flexDirection: 'column', // Apila imagen y texto
+    width: '30%',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5, // Pequeño padding para el contenido
-    // position: 'relative', // Se movió al thumbnailWrapper
+    paddingHorizontal: 5,
   },
-  thumbnailWrapper: { // Nuevo estilo para el contenedor de la imagen y el icono
+  thumbnailWrapper: {
     position: 'relative',
-    width: 60, // Mismo tamaño que la miniatura
-    height: 60, // Mismo tamaño que la miniatura
+    width: 60,
+    height: 60,
     marginBottom: 5,
   },
   productThumbnail: {
-    width: 60, // Aumentado el tamaño de la miniatura
-    height: 60, // Aumentado el tamaño de la miniatura
-    borderRadius: 8, // Bordes más redondeados
+    width: 60,
+    height: 60,
+    borderRadius: 8,
     resizeMode: 'cover',
-    // marginBottom: 5, // Se movió al thumbnailWrapper
   },
   productNameInRow: {
-    fontSize: 12, // Tamaño de fuente más pequeño para el nombre en la fila
+    fontSize: 12,
     color: '#333',
     fontWeight: 'bold',
     textAlign: 'center',
-    flexWrap: 'wrap', // Permite que el texto se ajuste si es largo
+    flexWrap: 'wrap',
   },
-  rowPriceCol: { width: '18%' }, // Ancho ajustado
+  rowPriceCol: { width: '18%' },
   rowQuantityCol: {
-    width: '27%', // Ancho ajustado para la columna de cantidad
+    width: '27%',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rowTotalCol: { width: '25%' }, // Ancho ajustado
-  // rowActionCol: { width: '0%', alignItems: 'center' }, // Eliminada la columna de acción
-
-  quantityInputWrapper: { // Nuevo estilo para el wrapper del input y las flechas
+  rowTotalCol: {
+    width: '25%',
+    textAlign: 'center',
+  },
+  quantityInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-
     borderColor: '#CCC',
     borderRadius: 5,
-    width: '90%', // Ocupa casi todo el ancho de su columna
-    justifyContent: 'space-between', // Espacia el input y las flechas
-    paddingHorizontal: 2, // Pequeño padding interno
+    width: '90%',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
   },
   quantityInput: {
-    // Permite que el input ocupe el espacio restante
     textAlign: 'center',
     fontSize: 14,
     paddingVertical: 5,
-
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 5,
+    width: 40,
   },
-  quantityArrowButton: { // Estilo para los botones de flecha
+  quantityArrowButton: {
     padding: 5,
   },
-  deleteIconContainer: { // Nuevo estilo para el contenedor del icono de eliminar
+  deleteIconContainer: {
     position: 'absolute',
-    top: -5, // Ajusta la posición vertical
-    right: -5, // Ajusta la posición horizontal
-    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Fondo semitransparente para el icono
-    borderRadius: 15, // Para que sea un círculo o un cuadrado redondeado
+    top: -5,
+    right: -5,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 15,
     padding: 2,
-    zIndex: 1, // Asegura que esté por encima de la imagen
+    zIndex: 1,
   },
   summaryContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 15,
     width: width * 0.95,
     padding: 20,
-    alignItems: 'flex-end', // Alinea el contenido a la derecha
+    alignItems: 'flex-end',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -362,20 +443,17 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#6A0DAD',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   viewOrderButton: {
     backgroundColor: '#6A0DAD',
-    paddingVertical: 15,
+    paddingVertical: 10,
     paddingHorizontal: 30,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%', // Ocupa todo el ancho del contenedor de resumen
+    borderRadius: 25,
   },
   viewOrderButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    color: '#fff',
     fontWeight: 'bold',
+    fontSize: 16,
   },
 });
