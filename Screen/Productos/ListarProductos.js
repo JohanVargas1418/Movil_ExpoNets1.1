@@ -12,24 +12,26 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native"; // Importa useRoute
 
-import HeaderComponent from "../../Components/HeaderComponent";
 import ChatButtonComponent from "../../Components/ChatButtonComponent";
 import MenuComponent from "../../Components/MenuComponent";
 
-import { ListarProductos } from "../../Src/Services/ProductoService";
+import { ListarProductos } from "../../Src/Services/ProductoService"; // Asegúrate de que esta ruta sea correcta
 
 const { width } = Dimensions.get('window');
 
 export default function ListarProductosScreen() {
   const navigation = useNavigation();
+  const route = useRoute(); // Hook para acceder a los parámetros de la ruta
   const categoriesScrollViewRef = useRef(null);
   const currentScrollX = useRef(0);
 
   const [showMenu, setShowMenu] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
+  // Inicializa searchText con el parámetro 'query' si existe, de lo contrario, con una cadena vacía
+  const [searchText, setSearchText] = useState(route.params?.query || '');
+  // Inicializa selectedCategory con el parámetro 'category' si existe, de lo contrario, con 'Todos'
+  const [selectedCategory, setSelectedCategory] = useState(route.params?.category || 'Todos');
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState(['Todos']);
   const [loading, setLoading] = useState(true);
@@ -37,12 +39,30 @@ export default function ListarProductosScreen() {
   const toggleMenu = () => setShowMenu(!showMenu);
 
   useEffect(() => {
+    // Configurar el botón de menú en el encabezado de la navegación
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity style={styles.menuButtonHeader} onPress={toggleMenu}>
+          <Ionicons name="menu-outline" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+      ),
+    });
+
+    // Efecto para actualizar el searchText o selectedCategory si los parámetros cambian
+    if (route.params?.query) {
+      setSearchText(route.params.query);
+    }
+    if (route.params?.category) {
+      setSelectedCategory(route.params.category);
+    }
+
     const cargarProductos = async () => {
       setLoading(true);
       const res = await ListarProductos();
       if (res.success) {
         setProductos(res.data);
 
+        // Extraer categorías únicas de los productos cargados
         const categoriasUnicas = [...new Set(res.data.map(p => p.categoria))];
         setCategorias(['Todos', ...categoriasUnicas]);
       } else {
@@ -52,7 +72,7 @@ export default function ListarProductosScreen() {
     };
 
     cargarProductos();
-  }, []);
+  }, [route.params?.query, route.params?.category, navigation]); // Dependencias del efecto
 
   const filteredProducts = productos.filter(product => {
     const matchCategoria = selectedCategory === 'Todos' || product.categoria === selectedCategory;
@@ -94,12 +114,10 @@ export default function ListarProductosScreen() {
 
   return (
     <View style={styles.container}>
-      <HeaderComponent toggleMenu={toggleMenu} />
+      {/* El HeaderComponent interno ha sido eliminado, el encabezado lo gestiona StackNavigator */}
 
       <ScrollView contentContainerStyle={styles.mainScrollViewContent}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.sectionTitle}>Explorar Productos</Text>
-        </View>
+        {/* El título de la sección ha sido eliminado, el título lo gestiona StackNavigator */}
 
         {/* Buscador */}
         <View style={styles.searchBarContainer}>
@@ -166,8 +184,7 @@ export default function ListarProductosScreen() {
                 <Text style={styles.productName} numberOfLines={2}>{product.nombre}</Text>
                 <Text style={styles.productPrice}>${product.precio}</Text>
                 <Text style={styles.productSeller} numberOfLines={1}>
-                  {product.usuarios?.nombre ? product.usuarios.nombre : "Vendedor desconocido"} 
-
+                  {product.usuarios?.nombre ? product.usuarios.nombre : "Vendedor desconocido"}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -187,15 +204,46 @@ export default function ListarProductosScreen() {
 }
 
 const styles = StyleSheet.create({
- 
-  container: { flex: 1, backgroundColor: "#F5F8FA", paddingTop: 60 },
-  mainScrollViewContent: { flexGrow: 1, alignItems: "center", paddingBottom: 100 },
-  titleContainer: { width: '100%', backgroundColor: '#6A0DAD', paddingVertical: 15, alignItems: 'center', marginBottom: 20, margin: 40 },
-  sectionTitle: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF' },
-  searchBarContainer: { flexDirection: 'row', width: width * 0.9, backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 10, marginBottom: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F8FA",
+    paddingTop: 0, // No se necesita padding superior aquí, el StackNavigator maneja el encabezado
+  },
+  mainScrollViewContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingBottom: 100,
+    paddingTop: 20, // Espacio para el contenido debajo del encabezado del StackNavigator
+  },
+  // Eliminado: titleContainer y sectionTitle ya que el encabezado del StackNavigator los reemplaza
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: width * 0.9,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
   searchInput: { flex: 1, height: 45, fontSize: 16, color: '#333' },
   searchButton: { padding: 8, backgroundColor: '#6A0DAD', borderRadius: 8, marginLeft: 10 },
-  categoriesSection: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 10, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E0E0E0', width: '100%', marginBottom: 20 },
+  categoriesSection: {
+    flexDirection: 'row',
+    alignItems: 'center', // Centrar verticalmente los elementos
+    justifyContent: 'center',
+    paddingVertical: 10,
+    // Eliminado: backgroundColor: '#FFFFFF',
+    // Eliminado: borderBottomWidth: 1,
+    // Eliminado: borderBottomColor: '#E0E0E0',
+    // Eliminado: shadowColor, shadowOffset, shadowOpacity, shadowRadius, elevation
+    width: '100%',
+    marginBottom: 20,
+  },
   categoriesContentWrapper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 5 },
   arrowButton: { padding: 10 },
   categoriesScrollView: { alignItems: 'center', paddingHorizontal: 5 },
@@ -203,12 +251,33 @@ const styles = StyleSheet.create({
   selectedCategoryButton: { backgroundColor: '#6A0DAD' },
   categoryText: { fontSize: 16, color: '#333', fontWeight: '500' },
   selectedCategoryText: { color: '#FFFFFF' },
-  productsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', width: width * 0.95, paddingHorizontal: 5 },
-  productCard: { backgroundColor: '#FFFFFF', borderRadius: 15, width: (width * 0.95 / 2) - 15, marginBottom: 15, elevation: 5, overflow: 'hidden', marginHorizontal: 5 },
+  productsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    width: width * 0.95,
+    paddingHorizontal: 5,
+  },
+  productCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    width: (width * 0.95 / 2) - 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
+    overflow: 'hidden',
+    marginHorizontal: 5,
+  },
   productImage: { width: '100%', height: 150, resizeMode: 'cover', borderTopLeftRadius: 15, borderTopRightRadius: 15 },
   productInfo: { padding: 10 },
   productName: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 5 },
   productPrice: { fontSize: 15, fontWeight: 'bold', color: '#6A0DAD', marginBottom: 5 },
   productSeller: { fontSize: 12, color: '#777' },
   noProductsText: { fontSize: 16, color: '#777', textAlign: 'center', marginTop: 20, width: '100%' },
+  menuButtonHeader: { // Estilo para el botón de menú en el encabezado de StackNavigator
+    paddingRight: 15, // Espacio a la derecha del botón
+  },
 });
