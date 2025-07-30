@@ -14,7 +14,7 @@ export default function MenuComponent({ isVisible, onClose }) {
       navigation.navigate("ListarEventos"); // Navegar a la pantalla ListarProductos
     } 
     else if (item === "Carrito") {
-      navigation.navigate("Carrito"); // Navegar a la pantalla ListarProductos
+      navigation.navigate("CarritoScreen"); // Navegar a la pantalla ListarProductos
     } 
     else if (item === "Home") {
       navigation.navigate("Home"); // Navegar a la pantalla Home

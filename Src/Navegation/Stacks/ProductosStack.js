@@ -1,6 +1,6 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import ListarProductosScreen from "../../../Screen//";
+import ListarProductosScreen from "../../../Screen/Productos/ListarProductos";
 import DetalleProducto from "../../../Screen//";
 import EditarProducto from "../../../Screen//";
 
