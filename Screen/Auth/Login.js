@@ -10,13 +10,13 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
-  Animated, // Asegúrate de importar Animated
+  Animated,
 } from "react-native";
 import BotonComponent from "../../Components/BotonComponent";
 import HeaderComponent from "../../Components/HeaderComponent";
 import FooterComponent from "../../Components/FooterComponent";
 import MenuComponent from "../../Components/MenuComponent";
-import ChatButtonComponent from "../../Components/ChatButtonComponent"; // Importar ChatButtonComponent
+import ChatButtonComponent from "../../Components/ChatButtonComponent";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { loginUser } from "../../Src/Services/AuthServeces"; // Importa la función de registro
@@ -28,16 +28,18 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showMenu, setShowMenu] = useState(false); // Estado para controlar la visibilidad del menú
-  const rippleScale = new Animated.Value(0); // Asegúrate de inicializar rippleScale
+  const [showMenu, setShowMenu] = useState(false);
+  const rippleScale = new Animated.Value(0);
 
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Campos Vacíos", "Por favor, ingresa tu correo electrónico y contraseña.");
       return;
     }
-    setLoading(true); // Cambia el estado de carga a verdadero
-    // Inicia la animación de onda
+
+    setLoading(true); // Set loading to true at the start of the login process
+
+    // Start the ripple animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(rippleScale, {
@@ -54,19 +56,18 @@ export default function LoginScreen() {
     ).start();
 
     try {
-      // Llama a la función de inicio de sesión
       const result = await loginUser(email, password);
       if (result.success) {
-        Alert.alert("Éxito", "¡Bienvenido!"); // Muestra un mensaje de éxito
+        Alert.alert("Éxito", "¡Bienvenido!");
         navigation.navigate("ListarProductos");
       } else {
-        Alert.alert("Error", result.message || "Error al iniciar sesión"); // Muestra un mensaje de error
+        Alert.alert("Error", result.message || "Error al iniciar sesión");
       }
     } catch (error) {
-      Alert.alert("Error", "Error inesperado"); // Manejo de errores
+      Alert.alert("Error", "Error inesperado");
     } finally {
-      rippleScale.setValue(0); // Resetea el efecto de onda
-      setLoading(false); // Cambia el estado de carga a falso
+      rippleScale.setValue(0); // Reset the ripple effect
+      setLoading(false); // Set loading to false when the process finishes
     }
   };
 
@@ -124,8 +125,7 @@ export default function LoginScreen() {
             title="Iniciar Ingresar"
             onPress={handleLogin}
             style={styles.loginButton}
-          // disabled={!loading} // Desactiva el botón si está cargando
-
+            disabled={loading} // Button is disabled when loading is true
           />
 
           <View style={styles.linkContainer}>
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
     marginBottom: 20,
-    margin: 30, // Añadido para dar espacio alrededor del card
+    margin: 30, // Added to provide space around the card
   },
   title: {
     fontSize: 28,

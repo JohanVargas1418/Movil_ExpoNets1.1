@@ -8,11 +8,7 @@ export default function HeaderComponent({ toggleMenu }) {
 
   return (
     <View style={styles.header}>
-      {/* Botón de Login en el Header, ahora funcional */}
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("Login")}>
-        <Ionicons name="log-in-outline" size={24} color="#6A0DAD" />
-        <Text style={styles.backButtonText}>login</Text>
-      </TouchableOpacity>
+     
       <Text style={styles.logoText}>EXPONETS</Text>
       <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
         <Ionicons name="menu-outline" size={28} color="#6A0DAD" />
@@ -47,7 +43,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   logoText: {
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: "bold",
     color: "#6A0DAD",
   },

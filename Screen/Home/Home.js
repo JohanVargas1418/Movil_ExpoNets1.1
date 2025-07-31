@@ -14,6 +14,7 @@ import {
 import HeaderComponent from "../../Components/HeaderComponent";
 import ChatButtonComponent from "../../Components/ChatButtonComponent";
 import MenuComponent from "../../Components/MenuComponent";
+import FooterComponent from "../../Components/FooterComponent";
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
 
@@ -27,8 +28,8 @@ const SNAP_INTERVAL_CAROUSEL = CARD_WIDTH_CAROUSEL + (CARD_MARGIN_HORIZONTAL_CAR
 export default function HomeScreen() {
   const navigation = useNavigation();
   const [showMenu, setShowMenu] = useState(false);
-  const [newsletterEmail, setNewsletterEmail] = useState(''); // Se mantiene por si se reintroduce el boletín
-  const [searchText, setSearchText] = useState('');
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [searchText, setSearchText] = useState(''); // Estado para el texto de búsqueda
   const popularProductsScrollViewRef = useRef(null);
   const [popularProductScrollIndex, setPopularProductScrollIndex] = useState(0);
 
@@ -36,10 +37,21 @@ export default function HomeScreen() {
     setShowMenu(!showMenu);
   };
 
+  // Función para manejar la búsqueda: ahora navega a ListarProductos y limpia el campo
   const handleSearch = () => {
-    Alert.alert("Búsqueda", `Buscando: ${searchText}`);
-    // Aquí podrías navegar a una pantalla de resultados de búsqueda
-    // navigation.navigate('SearchResults', { query: searchText });
+    if (searchText.trim() === '') {
+      Alert.alert("Búsqueda Vacía", "Por favor, ingresa algo para buscar.");
+      return;
+    }
+    // Navegar a la pantalla ListarProductos y pasar el texto de búsqueda como 'query'
+    navigation.navigate('ListarProductos', { query: searchText });
+    setSearchText(''); // Limpiar el campo de búsqueda después de navegar
+  };
+
+  // Función para manejar el clic en una categoría
+  const handleCategoryPress = (categoryName) => {
+    navigation.navigate('ListarProductos', { category: categoryName });
+    setSearchText(''); // Limpiar el campo de búsqueda también al seleccionar una categoría
   };
 
   // Datos de ejemplo para productos populares
@@ -47,7 +59,7 @@ export default function HomeScreen() {
     { id: 'p1', name: 'Yogurt de Arándanos', price: '16.900', image: require('../../Src/AssetsProductos/Images/yogurtArandanos.jpeg') },
     { id: 'p2', name: 'Miel Pura de Abeja', price: '40.000', image: require('../../Src/AssetsProductos/Images/miel.jpg') },
     { id: 'p3', name: 'Cerveza Artesanal', price: '18.000', image: require('../../Src/AssetsProductos/Images/cerveza.jpg') },
-    { id: 'p4', name: 'Pan Campesino', price: '8.500', image: 'https://placehold.co/300x200/F5F8FA/000000?text=Pan' },
+    { id: 'p4', name: 'Pan Campesino', price: '8.500', image: require('../../Src/AssetsProductos/Images/miel.jpg') },
   ];
 
   // Datos de ejemplo para la nueva sección "Novedades"
@@ -86,8 +98,8 @@ export default function HomeScreen() {
             placeholder="Buscar productos, tiendas..."
             placeholderTextColor="#888"
             value={searchText}
-            onChangeText={setSearchText}
-            onSubmitEditing={handleSearch}
+            onChangeText={setSearchText} // Actualiza el estado searchText con cada cambio
+            onSubmitEditing={handleSearch} // Llama a handleSearch al presionar Enter/Submit
           />
           <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
             <Ionicons name="search-outline" size={24} color="#FFFFFF" />
@@ -121,27 +133,27 @@ export default function HomeScreen() {
         {/* Sección 3: Categorías */}
         <Text style={styles.sectionHeading}>CATEGORÍAS</Text>
         <View style={styles.categoriesGrid}>
-          <TouchableOpacity style={styles.categoryCard} onPress={() => Alert.alert("Categoría", "Delicias Artesanales")}>
+          <TouchableOpacity style={styles.categoryCard} onPress={() => handleCategoryPress("Delicias Artesanales")}>
             <Ionicons name="cafe-outline" size={30} color="#6A0DAD" />
             <Text style={styles.categoryCardText}>Delicias Artesanales</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryCard} onPress={() => Alert.alert("Categoría", "Hogar y Decoración")}>
+          <TouchableOpacity style={styles.categoryCard} onPress={() => handleCategoryPress("Hogar y Decoración")}>
             <Ionicons name="home-outline" size={30} color="#6A0DAD" />
             <Text style={styles.categoryCardText}>Hogar y Decoración</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryCard} onPress={() => Alert.alert("Categoría", "Artesanías")}>
+          <TouchableOpacity style={styles.categoryCard} onPress={() => handleCategoryPress("Juguetería")}>
             <Ionicons name="game-controller-outline" size={30} color="#6A0DAD" />
             <Text style={styles.categoryCardText}>Juguetería</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryCard} onPress={() => Alert.alert("Categoría", "Artesanías")}>
+          <TouchableOpacity style={styles.categoryCard} onPress={() => handleCategoryPress("Mascotas")}>
             <Ionicons name="paw-outline" size={30} color="#6A0DAD" />
             <Text style={styles.categoryCardText}>Mascotas</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryCard} onPress={() => Alert.alert("Categoría", "Artesanías")}>
+          <TouchableOpacity style={styles.categoryCard} onPress={() => handleCategoryPress("Ropa")}>
             <Ionicons name="shirt-outline" size={30} color="#6A0DAD" />
             <Text style={styles.categoryCardText}>Ropa</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryCard} onPress={() => Alert.alert("Categoría", "Artesanías")}>
+          <TouchableOpacity style={styles.categoryCard} onPress={() => handleCategoryPress("Accesorios")}>
             <Ionicons name="sparkles-outline" size={30} color="#6A0DAD" />
             <Text style={styles.categoryCardText}>Accesorios</Text>
           </TouchableOpacity>
@@ -200,63 +212,20 @@ export default function HomeScreen() {
                   onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
                   defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')}
                 />
-                <TouchableOpacity style={styles.popularProductLabelButton}>
-                  <Text style={styles.popularProductLabelText}>{product.name}</Text>
-                </TouchableOpacity>
-                <Text style={styles.popularProductPriceCarousel}>${product.descripcion}</Text>
-                <Text style={styles.popularProductPriceCarousel}>${product.price}</Text>
+                {/* Contenedor para el nombre y el precio para mejor control de espaciado */}
+                <View style={styles.popularProductTextContainer}>
+                  <TouchableOpacity style={styles.popularProductLabelButton}>
+                    <Text style={styles.popularProductLabelText}>{product.name}</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.popularProductPriceCarousel}>${product.price}</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
 
-        {/* Sección 5: Vendedores Destacados */}
-        <Text style={styles.sectionHeading}>VENDEDORES DESTACADOS</Text>
-        <View style={styles.featuredCompaniesContainer}>
-          <TouchableOpacity style={styles.companyCard} onPress={() => Alert.alert("Empresa", "El Viajero")}>
-            <Image
-              source={require('../../Src/AssetsProductos/Images/ElViajero.jpeg')}
-              style={styles.companyImage}
-              onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
-              defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')}
-            />
-            <View style={styles.companyDetails}>
-              <Text style={styles.companyName}>El Viajero</Text>
-              <Text style={styles.companyDescription}>Yogurt Artesanal</Text>
-              <Text style={styles.companyLongDescription}>
-                Magni qui quod omnis unde et eos fuga et exercitationem. Odio veritatis perspiciatis quaerat qui aut aut aut
-              </Text>
-              <View style={styles.companySocialIcons}>
-                <Ionicons name="logo-facebook" size={20} color="#6A0DAD" style={styles.socialIcon} />
-                <Ionicons name="logo-instagram" size={20} color="#6A0DAD" style={styles.socialIcon} />
-                <Ionicons name="logo-linkedin" size={20} color="#6A0DAD" style={styles.socialIcon} />
-              </View>
-            </View>
-          </TouchableOpacity>
+      
 
-          <TouchableOpacity style={styles.companyCard} onPress={() => Alert.alert("Empresa", "Salvita")}>
-            <Image
-              source={require('../../Src/AssetsProductos/Images/Salvita.jpeg')}
-              style={styles.companyImage}
-              onError={(e) => console.log('Error loading image:', e.nativeEvent.error)}
-              defaultSource={require('../../Src/AssetsProductos/Images/no-image.png')}
-            />
-            <View style={styles.companyDetails}>
-              <Text style={styles.companyName}>Salvita</Text>
-              <Text style={styles.companyDescription}>BATIDOS FUNCIONALES</Text>
-              <Text style={styles.companyLongDescription}>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-              </Text>
-              <View style={styles.companySocialIcons}>
-                <Ionicons name="logo-facebook" size={20} color="#6A0DAD" style={styles.socialIcon} />
-                <Ionicons name="logo-instagram" size={20} color="#6A0DAD" style={styles.socialIcon} />
-                <Ionicons name="logo-linkedin" size={20} color="#6A0DAD" style={styles.socialIcon} />
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        
       </ScrollView>
 
       {/* Chat Button Component */}
@@ -272,12 +241,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F8FA",
-    paddingTop: 60, // Espacio para el header fijo
+    paddingTop: 0, // Eliminado el padding superior aquí
   },
   scrollViewContent: {
     flexGrow: 1,
     alignItems: 'center',
     paddingBottom: 100, // Espacio para el botón de chat flotante
+    paddingTop: 60, // Añadido un padding superior para el contenido debajo del header fijo
   },
   // Barra de Búsqueda
   searchBarContainer: {
@@ -293,7 +263,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    margin:50,
+    marginTop:40,
+
+    // Eliminado: margin:50, // Este margen ya no es necesario aquí
   },
   searchInput: {
     flex: 1,
@@ -517,22 +489,25 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
     alignItems: 'center',
-    justifyContent: 'space-between',
     height: 320,
   },
   popularProductImageCarousel: {
     width: '90%',
-    height: 180,
+    height: 230,
     borderRadius: 10,
     resizeMode: 'contain',
     marginBottom: 10,
+  },
+  popularProductTextContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
   popularProductLabelButton: {
     backgroundColor: '#6A0DAD',
     paddingVertical: 5,
     paddingHorizontal: 10,
-    borderRadius: 15,
-    marginBottom: 5,
+    borderRadius: 5,
+    marginBottom: 8,
   },
   popularProductLabelText: {
     color: '#FFFFFF',
@@ -544,7 +519,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 'auto',
   },
 
   // Sección 5: Vendedores Destacados
