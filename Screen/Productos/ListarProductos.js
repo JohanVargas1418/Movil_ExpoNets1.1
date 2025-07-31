@@ -157,7 +157,7 @@ export default function ListarProductosScreen() {
             >
               <Image
                 source={{
-                  uri: `http://172.30.6.28:8000/storage/imagenes/${product.imagenes?.[0]?.nombreArchivo}`,
+                  uri: `http://172.30.3.22:8000/storage/imagenes/${product.imagenes?.[0]?.nombreArchivo}`,
                 }}
                 style={styles.productImage}
                 resizeMode="cover"

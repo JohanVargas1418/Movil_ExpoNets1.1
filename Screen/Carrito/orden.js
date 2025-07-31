@@ -93,18 +93,40 @@ export default function OrdenScreen() {
   }, [route.params?.cartItems]);
 
   const handleConfirmOrder = () => {
+    // Validar que la dirección de envío esté completa antes de proceder
+    if (!handleSaveShipping()) {
+      return; // Si la validación falla, no continúa
+    }
+
+    if (paymentMethod === "") {
+      Alert.alert("Método de Pago No Seleccionado", "Por favor, selecciona un método de pago para continuar.");
+      return;
+    }
+
     Alert.alert("Confirmación", "¿Deseas confirmar tu orden?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Confirmar",
         onPress: () => {
-          setOrderDetails(prev => ({
-            ...prev,
-            status: "Completada",
-            paymentStatus: "Pagado",
-            paymentMethod: paymentMethod,
-          }));
-          Alert.alert("Orden Confirmada", "Tu orden ha sido enviada con éxito.");
+          if (paymentMethod === "Tarjeta de Crédito" || paymentMethod === "PayPal") {
+            // Si el método de pago es Tarjeta de Crédito o PayPal, redirige a PaymentScreen
+            navigation.navigate("PaymentScreen", {
+              orderDetails: {
+                ...orderDetails,
+                paymentMethod: paymentMethod, // Asegura que el método de pago esté actualizado
+              },
+            });
+          } else {
+            // Para otros métodos de pago (ej. Pago contra entrega, Transferencia Bancaria),
+            // actualiza el estado de la orden directamente.
+            setOrderDetails(prev => ({
+              ...prev,
+              status: "Completada",
+              paymentStatus: paymentMethod === "Pago contra entrega" ? "Pendiente" : "Pagado", // Ajusta el estado de pago según el método
+              paymentMethod: paymentMethod,
+            }));
+            Alert.alert("Orden Confirmada", "Tu orden ha sido enviada con éxito.");
+          }
         },
       },
     ]);
@@ -155,7 +177,7 @@ export default function OrdenScreen() {
           <View style={styles.summaryRowTotal}>
             <Text style={styles.summaryLabelTotal}>Total:</Text>
             <Text style={styles.summaryValueTotal}>
-              ${(orderDetails.total + orderDetails.shipping).toLocaleString("es-CO")}
+              {(orderDetails.total + orderDetails.shipping).toLocaleString("es-CO")}
             </Text>
           </View>
         </View>
@@ -316,7 +338,8 @@ export default function OrdenScreen() {
           <Text style={styles.goHomeButtonText}>Volver al Inicio</Text>
         </TouchableOpacity>
 
-        {orderDetails.paymentStatus !== "Pagado" && (
+        {/* Solo muestra el botón de confirmar si la orden no ha sido pagada y si hay elementos en el carrito */}
+        {orderDetails.paymentStatus !== "Pagado" && orderDetails.items.length > 0 && (
           <TouchableOpacity
             style={[styles.goHomeButton, { backgroundColor: "#28a745", marginTop: 10 }]}
             onPress={handleConfirmOrder}
@@ -507,5 +530,25 @@ const styles = StyleSheet.create({
     color: "#777",
     textAlign: "center",
     paddingVertical: 20,
+  },
+  formGroup: {
+    marginBottom: 10,
+    width: '100%',
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 5,
+    fontWeight: "bold",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: "#333",
+    backgroundColor: "#F8F8F8",
   },
 });

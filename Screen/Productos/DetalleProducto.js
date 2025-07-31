@@ -63,7 +63,7 @@ export default function DetalleProducto() {
     }
 
 
-    navigation.navigate("CarritoScreen", {
+    navigation.navigate("Carrito", {
       addedProduct: {
         id: product.id,
         name: product.nombre,

@@ -106,7 +106,7 @@ export default function CarritoScreen() {
   };
 
  const handleViewOrder = () => {
-  navigation.navigate("OrdenScreen", {
+  navigation.navigate("Orden", {
     cartItems: cartItems.map(item => ({
       nombre: item.name,
       cantidad: item.quantity,
